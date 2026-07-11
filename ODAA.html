@@ -231,6 +231,11 @@
       opacity: 1;
     }
 
+    .sync-dot.err {
+      color: #9a3324;
+      background: #fcece8;
+    }
+
     .search {
       margin: 14px auto 0;
       max-width: 900px;
@@ -1858,13 +1863,24 @@
       var spaceCode = localStorage.getItem("oda.space") || "";
       var syncTimer = null, lastRemoteJSON = "", rtChannel = null;
       function bundle() { return { recipes: load(), plan: loadPlan(), cart: loadCart() }; }
-      function flashSync() { var d = document.getElementById("syncDot"); if (!d) return; d.classList.add("show"); clearTimeout(d._t); d._t = setTimeout(function () { d.classList.remove("show"); }, 1400); }
+      function flashSync() {
+        var d = document.getElementById("syncDot"); if (!d) return;
+        d.classList.remove("err"); d.textContent = "מסונכרן ☁️";
+        d.classList.add("show"); clearTimeout(d._t); d._t = setTimeout(function () { d.classList.remove("show"); }, 1400);
+      }
+      function flashSyncError(msg) {
+        var d = document.getElementById("syncDot"); if (!d) return;
+        d.textContent = "שגיאת סנכרון ⚠️" + (msg ? " — " + msg : "");
+        d.classList.add("show", "err"); clearTimeout(d._t);
+        d._t = setTimeout(function () { d.classList.remove("show", "err"); }, 5000);
+      }
       function scheduleSync() { if (!sb || !spaceCode) return; clearTimeout(syncTimer); syncTimer = setTimeout(pushCloud, 600); }
       function pushCloud() {
         if (!sb || !spaceCode) return;
         var data = bundle(); lastRemoteJSON = JSON.stringify(data);
         sb.from("oda_spaces").upsert({ code: spaceCode, data: data, updated_at: new Date().toISOString() }).then(function (res) {
-          if (res && res.error) console.warn("sync push:", res.error.message); else flashSync();
+          if (res && res.error) { console.warn("sync push:", res.error.message); flashSyncError(res.error.message); }
+          else flashSync();
         });
       }
       function applyRemote(data) {
@@ -1881,8 +1897,16 @@
       function pullCloud(cb) {
         if (!sb || !spaceCode) { if (cb) cb(); return; }
         sb.from("oda_spaces").select("data").eq("code", spaceCode).maybeSingle().then(function (res) {
-          if (res && res.data && res.data.data) applyRemote(res.data.data);
-          else pushCloud();
+          if (res && res.error) {
+            // A read failure must NOT be treated as "this code doesn't exist yet" —
+            // doing so would push local data over (and destroy) the partner's shared recipes.
+            console.warn("sync pull:", res.error.message);
+            flashSyncError(res.error.message);
+          } else if (res && res.data && res.data.data) {
+            applyRemote(res.data.data);
+          } else {
+            pushCloud();
+          }
           if (cb) cb();
         });
       }
@@ -2470,12 +2494,23 @@
             '<p class="view-sub">זהו הקוד של המרחב המשותף שלכן. שלחי אותו לבן/בת הזוג — שתיכן תראו את אותם מתכונים, תכנון ורשימה בכל מכשיר.</p>' +
             '<label>הקוד שלכן</label>' +
             '<div class="code-box"><span id="spaceCodeText">' + esc(spaceCode) + '</span><button id="spaceCopy">העתקה</button></div>' +
+            '<div class="divider">או</div>' +
+            '<label for="spaceInput">קיבלת קוד אחר מבן/בת הזוג? הצטרפי אליו כאן</label>' +
+            '<input type="text" id="spaceInput" placeholder="הדביקי כאן את הקוד" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" />' +
+            '<button class="btn ghost" id="spaceJoinBtn">הצטרפות לקוד הזה</button>' +
             '<button class="btn ghost" id="spaceLeave">התנתקות מהמרחב</button>';
           document.getElementById("spaceCopy").onclick = function () {
             var t = spaceCode;
             if (navigator.clipboard) navigator.clipboard.writeText(t);
             this.textContent = "הועתק ✓";
             var self = this; setTimeout(function () { self.textContent = "העתקה"; }, 1500);
+          };
+          document.getElementById("spaceJoinBtn").onclick = function () {
+            var v = document.getElementById("spaceInput").value.trim().toLowerCase();
+            if (!v) return;
+            if (v === spaceCode) return;
+            if (!confirm("המתכונים, התכנון והרשימה שלך במכשיר הזה יוחלפו באלו של המרחב שאליו את מצטרפת. להמשיך?")) return;
+            joinSpace(v); openSpace();
           };
           document.getElementById("spaceLeave").onclick = function () {
             if (confirm("להתנתק מהמרחב המשותף? המידע יישאר במכשיר הזה אבל יפסיק להתעדכן עם בן/בת הזוג.")) {
@@ -2488,11 +2523,11 @@
             '<button class="btn" id="spaceCreate">יצירת מרחב חדש</button>' +
             '<div class="divider">או</div>' +
             '<label for="spaceInput">הצטרפות עם קוד קיים</label>' +
-            '<input type="text" id="spaceInput" placeholder="הדביקי כאן את הקוד" />' +
+            '<input type="text" id="spaceInput" placeholder="הדביקי כאן את הקוד" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" />' +
             '<button class="btn ghost" id="spaceJoinBtn">הצטרפות</button>';
           document.getElementById("spaceCreate").onclick = function () { joinSpace(randomCode()); openSpace(); };
           document.getElementById("spaceJoinBtn").onclick = function () {
-            var v = document.getElementById("spaceInput").value.trim();
+            var v = document.getElementById("spaceInput").value.trim().toLowerCase();
             if (!v) return;
             joinSpace(v); openSpace();
           };
