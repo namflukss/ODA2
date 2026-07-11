@@ -375,29 +375,14 @@
       position: relative;
       overflow: hidden;
       border-radius: var(--r-card);
-      padding: 20px 20px 18px;
-      min-height: 188px;
       cursor: pointer;
       border: 1px solid rgba(35, 35, 43, .06);
       box-shadow: 0 10px 26px -20px rgba(35, 35, 43, .25);
       display: flex;
       flex-direction: column;
+      background: var(--surface);
       isolation: isolate;
       transition: transform .2s cubic-bezier(.16, 1, .3, 1), box-shadow .2s;
-    }
-
-    .rcard::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      z-index: 0;
-      pointer-events: none;
-      background: linear-gradient(135deg, rgba(255, 255, 255, .38) 0%, rgba(255, 255, 255, 0) 44%, rgba(255, 255, 255, .18) 100%);
-    }
-
-    .rcard > * {
-      position: relative;
-      z-index: 2;
     }
 
     .rcard:hover {
@@ -432,96 +417,138 @@
       }
     }
 
-    .rcard .rcat {
-      font-size: 12px;
-      font-weight: 700;
-      color: rgba(35, 35, 43, .54);
-      letter-spacing: .04em;
-      text-transform: uppercase;
+    .rcard-media {
+      position: relative;
+      height: 128px;
+      flex-shrink: 0;
+      overflow: hidden;
+      background-image: radial-gradient(120% 140% at 22% 16%, rgba(255, 255, 255, .55) 0%, transparent 60%);
     }
 
-    .rcard h3 {
-      margin: 7px 0 0;
-      font-size: 24px;
+    .rcat-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 3;
+      font-size: 11px;
       font-weight: 800;
-      letter-spacing: -.5px;
-      line-height: 1.14;
+      letter-spacing: .01em;
+      color: rgba(35, 35, 43, .78);
+      background: rgba(255, 255, 255, .82);
+      -webkit-backdrop-filter: blur(6px);
+      backdrop-filter: blur(6px);
+      padding: 5px 11px;
+      border-radius: var(--r-full);
+      box-shadow: 0 3px 8px -4px rgba(35, 35, 43, .25);
+      max-width: calc(100% - 60px);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .rcard-body {
+      position: relative;
+      padding: 14px 16px 16px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+
+    .rcard-body h3 {
+      margin: 0;
+      font-size: 16.5px;
+      font-weight: 800;
+      letter-spacing: -.2px;
+      line-height: 1.28;
       color: var(--ink);
-      max-width: 68%;
       display: -webkit-box;
       -webkit-box-orient: vertical;
       -webkit-line-clamp: 2;
       overflow: hidden;
-      min-height: 2.6em;
+      min-height: 2.56em;
     }
 
     .rcard .rmeta {
       display: flex;
       align-items: center;
-      gap: 8px;
-      margin-top: auto;
-      padding-top: 12px;
+      gap: 6px;
+      margin-top: 10px;
       flex-wrap: wrap;
     }
 
     .rcard .rmeta .chip-meta {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      font-size: 12.5px;
+      gap: 5px;
+      font-size: 11.5px;
       font-weight: 700;
-      color: rgba(35, 35, 43, .74);
-      background: rgba(255, 255, 255, .7);
-      border: 1px solid rgba(35, 35, 43, .06);
-      padding: 6px 11px;
+      color: var(--ink-2);
+      background: var(--bg);
+      border: 1px solid var(--line);
+      padding: 5px 9px;
       border-radius: var(--r-full);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3);
     }
 
     .rcard .rmeta .chip-meta svg {
-      width: 14px;
-      height: 14px;
+      width: 12.5px;
+      height: 12.5px;
     }
 
     .rcard .rmeta .chip-meta.warn {
       color: #9a3324;
     }
 
-    /* corner art */
+    .rcard-go {
+      flex-shrink: 0;
+      margin-top: auto;
+      align-self: flex-start;
+      width: 32px;
+      height: 32px;
+      background: var(--accent-soft);
+      border-radius: 50%;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform .2s cubic-bezier(.16, 1, .3, 1), background .2s, color .2s;
+    }
+
+    .rcard-go svg {
+      width: 15px;
+      height: 15px;
+    }
+
+    .rcard:hover .rcard-go {
+      background: var(--accent);
+      color: #fff;
+      transform: scale(1.08);
+    }
+
+    /* art inside media */
     .rcard-art {
       position: absolute;
-      bottom: -12px;
-      left: -12px;
-      width: 138px;
-      height: 138px;
+      inset: 0;
       z-index: 1;
       pointer-events: none;
-      opacity: .94;
     }
 
     .rcard-art.emoji {
-      font-size: 94px;
+      font-size: 58px;
       line-height: 1;
       display: flex;
-      align-items: flex-end;
+      align-items: center;
       justify-content: center;
       transition: transform .35s cubic-bezier(.16, 1, .3, 1);
-      filter: saturate(1.02);
+      filter: saturate(1.05);
     }
 
     .rcard:hover .rcard-art.emoji {
-      transform: scale(1.08) rotate(-5deg);
+      transform: scale(1.08) rotate(-4deg);
     }
 
     .rcard-art.photo {
-      border-radius: 50%;
-      overflow: hidden;
-      box-shadow: 0 16px 30px -18px rgba(35, 35, 43, .3);
-      border: 3px solid rgba(255, 255, 255, .72);
-      bottom: -8px;
-      left: -6px;
-      width: 128px;
-      height: 128px;
+      width: 100%;
+      height: 100%;
     }
 
     .rcard-art.photo img {
@@ -532,7 +559,7 @@
     }
 
     .rcard:hover .rcard-art.photo img {
-      transform: scale(1.1);
+      transform: scale(1.08);
     }
 
     /* ---------- Tabs nav ---------- */
@@ -941,14 +968,14 @@
     /* ---------- Favorites + reactions + groceries ---------- */
     .card-fav {
       position: absolute;
-      top: 14px;
-      left: 14px;
+      top: 10px;
+      left: 10px;
       z-index: 3;
-      width: 36px;
-      height: 36px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
       border: 1px solid rgba(35, 35, 43, .05);
-      background: rgba(255, 255, 255, .72);
+      background: rgba(255, 255, 255, .78);
       -webkit-backdrop-filter: blur(6px);
       backdrop-filter: blur(6px);
       cursor: pointer;
@@ -961,8 +988,8 @@
     }
 
     .card-fav svg {
-      width: 19px;
-      height: 19px;
+      width: 16px;
+      height: 16px;
     }
 
     .card-fav:active {
@@ -1946,6 +1973,7 @@
 
       var ICO_WARN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>';
       var ICO_LIST = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>';
+      var ICO_ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg>';
       var STAR_SVG = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.6l2.9 5.9 6.5.95-4.7 4.6 1.1 6.45L12 17.9l-5.8 3.05 1.1-6.45-4.7-4.6 6.5-.95z"/></svg>';
       var REACT_EMOJI = { love: "😍", ok: "🙂", no: "😖" };
       var REACT_LABEL = { love: "אהב/ה", ok: "בסדר", no: "פחות" };
@@ -2070,18 +2098,22 @@
           var card = document.createElement("div");
           card.className = "rcard" + (animate ? " in" : "");
           card.style.setProperty("--index", i);
-          card.style.background = catBg(r.cat);
 
           var meta = "";
           var n = (r.ingredients || "").split("\n").filter(Boolean).length;
           if (n) meta += '<span class="chip-meta">' + ICO_LIST + n + ' מרכיבים</span>';
           if (r.reaction) meta += '<span class="chip-meta">' + REACT_EMOJI[r.reaction] + ' ' + REACT_LABEL[r.reaction] + '</span>';
           card.innerHTML =
-            '<button class="card-fav' + (r.fav ? ' on' : '') + '" aria-label="מועדף">' + STAR_SVG + '</button>' +
-            '<div class="rcat">' + esc(r.cat) + '</div>' +
-            '<h3>' + esc(r.name) + '</h3>' +
-            '<div class="rmeta">' + meta + '</div>' +
-            art(r, "rcard-art");
+            '<div class="rcard-media" style="background:' + catBg(r.cat) + '">' +
+              art(r, "rcard-art") +
+              '<span class="rcat-badge">' + esc(r.cat) + '</span>' +
+              '<button class="card-fav' + (r.fav ? ' on' : '') + '" aria-label="מועדף">' + STAR_SVG + '</button>' +
+            '</div>' +
+            '<div class="rcard-body">' +
+              '<h3>' + esc(r.name) + '</h3>' +
+              '<div class="rmeta">' + meta + '</div>' +
+              '<span class="rcard-go" aria-hidden="true">' + ICO_ARROW + '</span>' +
+            '</div>';
           card.onclick = function () { openDetail(r.id); };
           card.querySelector(".card-fav").onclick = function (e) { e.stopPropagation(); toggleFav(r.id); };
           grid.appendChild(card);
