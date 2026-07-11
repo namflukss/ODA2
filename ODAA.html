@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#faf6f0" />
+  <meta name="theme-color" content="#f2f1ee" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -17,16 +17,16 @@
     rel="stylesheet">
   <style>
     :root {
-      --bg: #f9fdff;
+      --bg: #f2f1ee;
       --surface: #ffffff;
-      --ink: #000d15;
-      --ink-2: #4f6471;
-      --ink-3: #7d8f9a;
-      --line: #e6f2fb;
-      --accent: #00719a;
-      --accent-soft: #e8f8ff;
-      --coral: #ffecef;
-      --secondary: #fd81e0;
+      --ink: #1a2235;
+      --ink-2: #545e76;
+      --ink-3: #a8aaad;
+      --line: #e4e3df;
+      --accent: #263759;
+      --accent-soft: #e8eaef;
+      --coral: #e4e3df;
+      --secondary: #545e76;
       /* active tab pill */
       --r-md: 16px;
       --r-lg: 22px;
@@ -61,8 +61,8 @@
       padding-bottom: env(safe-area-inset-bottom);
       background-color: var(--bg);
       background-image:
-        radial-gradient(44% 36% at 0% 0%, rgba(18, 167, 251, .12) 0%, transparent 72%),
-        radial-gradient(40% 30% at 100% 0%, rgba(253, 129, 224, .12) 0%, transparent 72%);
+        radial-gradient(44% 36% at 0% 0%, rgba(38, 55, 89, .10) 0%, transparent 72%),
+        radial-gradient(40% 30% at 100% 0%, rgba(84, 94, 118, .10) 0%, transparent 72%);
       background-attachment: fixed;
     }
 
@@ -119,7 +119,7 @@
       position: sticky;
       top: 0;
       z-index: 20;
-      background: rgba(250, 246, 240, .78);
+      background: rgba(242, 241, 238, .78);
       backdrop-filter: saturate(150%) blur(16px);
       -webkit-backdrop-filter: saturate(150%) blur(16px);
       padding: calc(env(safe-area-inset-top) + 16px) var(--s-2) 14px;
@@ -246,7 +246,7 @@
       border: 0;
       border-radius: var(--r-full);
       padding: 14px 18px;
-      box-shadow: 0 8px 24px -18px rgba(18, 167, 251, .25);
+      box-shadow: 0 8px 24px -18px rgba(38, 55, 89, .22);
     }
 
     .search input {
@@ -619,7 +619,7 @@
     .tab.active {
       background: linear-gradient(135deg, var(--accent) 0%, var(--secondary) 100%);
       color: #fff;
-      box-shadow: 0 10px 24px -14px rgba(18, 167, 251, .45);
+      box-shadow: 0 10px 24px -14px rgba(38, 55, 89, .40);
     }
 
     .tab.active:hover {
@@ -1074,7 +1074,7 @@
       font-size: 15px;
       cursor: pointer;
       margin-top: 6px;
-      box-shadow: 0 14px 28px -14px rgba(91, 75, 214, .7);
+      box-shadow: 0 14px 28px -14px rgba(38, 55, 89, .6);
       transition: transform .12s;
     }
 
@@ -1121,7 +1121,7 @@
       font-size: 16px;
       font-weight: 800;
       font-family: inherit;
-      box-shadow: 0 16px 32px -12px rgba(91, 75, 214, .75);
+      box-shadow: 0 16px 32px -12px rgba(38, 55, 89, .65);
       transition: transform .14s cubic-bezier(.16, 1, .3, 1), box-shadow .2s;
       display: flex;
       align-items: center;
@@ -1656,7 +1656,7 @@
 
   <nav class="tabbar">
     <div class="tabs" id="tabs">
-      <button class="tab active" data-view="recipes" style="--tab-color:var(--coral)">
+      <button class="tab active" data-view="recipes" style="--tab-color:var(--accent)">
         <svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
           stroke-linejoin="round">
           <path d="M7 21h10" />
@@ -1665,7 +1665,7 @@
         </svg>
         ספריית מתכונים
       </button>
-      <button class="tab" data-view="planner" style="--tab-color:#3aa792">
+      <button class="tab" data-view="planner" style="--tab-color:var(--secondary)">
         <svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
           stroke-linejoin="round">
           <rect x="3" y="4.5" width="18" height="16.5" rx="2.5" />
@@ -1673,7 +1673,7 @@
         </svg>
         תכנון ארוחות
       </button>
-      <button class="tab" data-view="cart" style="--tab-color:#7a5cf0">
+      <button class="tab" data-view="cart" style="--tab-color:var(--ink)">
         <svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
           stroke-linejoin="round">
           <circle cx="9.5" cy="20" r="1.4" />
