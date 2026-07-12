@@ -425,11 +425,19 @@
       background-image: radial-gradient(120% 140% at 22% 16%, rgba(255, 255, 255, .55) 0%, transparent 60%);
     }
 
-    .rcat-badge {
+    .rcat-badges {
       position: absolute;
       top: 10px;
       right: 10px;
+      left: 50px;
       z-index: 3;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 5px;
+    }
+
+    .rcat-badge {
       font-size: 11px;
       font-weight: 800;
       letter-spacing: .01em;
@@ -440,7 +448,7 @@
       padding: 5px 11px;
       border-radius: var(--r-full);
       box-shadow: 0 3px 8px -4px rgba(35, 35, 43, .25);
-      max-width: calc(100% - 60px);
+      max-width: 100%;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -2364,10 +2372,12 @@
           var n = (r.ingredients || "").split("\n").filter(Boolean).length;
           if (n) meta += '<span class="chip-meta">' + ICO_LIST + n + ' מרכיבים</span>';
           if (r.reaction) meta += '<span class="chip-meta">' + REACT_EMOJI[r.reaction] + ' ' + REACT_LABEL[r.reaction] + '</span>';
+          var cats = (r.cats && r.cats.length ? r.cats : [r.cat]);
+          var badges = cats.map(function (c) { return '<span class="rcat-badge">' + esc(c) + '</span>'; }).join("");
           card.innerHTML =
             '<div class="rcard-media" style="background:' + catBg(r.cat) + '">' +
               art(r, "rcard-art") +
-              '<span class="rcat-badge">' + esc(r.cat) + '</span>' +
+              '<div class="rcat-badges">' + badges + '</div>' +
               '<button class="card-fav' + (r.fav ? ' on' : '') + '" aria-label="מועדף">' + STAR_SVG + '</button>' +
             '</div>' +
             '<div class="rcard-body">' +
