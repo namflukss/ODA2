@@ -969,6 +969,42 @@
       font-size: 15px;
     }
 
+    .ing-pick-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--surface);
+      border-radius: var(--r-md);
+      padding: 12px 15px;
+      box-shadow: var(--shadow);
+      margin-bottom: 8px;
+      cursor: pointer;
+    }
+
+    .ing-pick-check {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid #d4d4de;
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 14px;
+    }
+
+    .ing-pick-row.sel .ing-pick-check {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .ing-pick-text {
+      flex: 1;
+      font-size: 14.5px;
+      color: var(--ink);
+    }
+
     .cart-del {
       border: 0;
       background: transparent;
@@ -2017,6 +2053,25 @@
     </div>
   </div>
 
+  <!-- Ingredient picker (add specific ingredients to shopping list) -->
+  <div class="overlay" id="ingPickOverlay">
+    <div class="sheet">
+      <div class="grabber"></div>
+      <div class="sheet-head">
+        <h2>בחירת מרכיבים</h2>
+        <button class="icon-btn" id="ingPickClose" aria-label="סגירה">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round">
+            <path d="M18 6 6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <button type="button" class="btn ghost" id="ingPickToggleAll" style="margin-top:0;margin-bottom:12px">ביטול כל הבחירה</button>
+      <div id="ingPickList"></div>
+      <button type="button" class="btn" id="ingPickConfirm">הוספה לרשימת הקניות</button>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     (function () {
@@ -2427,7 +2482,7 @@
           '</div>';
 
         var cartBtn = document.getElementById("cartBtn");
-        if (cartBtn) cartBtn.onclick = function () { addRecipeToCart(r); closeOverlay(detailOverlay); setView("cart"); };
+        if (cartBtn) cartBtn.onclick = function () { openIngredientPicker(r); };
 
         document.getElementById("favBtn").onclick = function () { toggleFav(r.id); openDetail(r.id); };
 
@@ -2791,13 +2846,56 @@
       var CART_KEY = "oda.cart.v1";
       function loadCart() { try { return JSON.parse(localStorage.getItem(CART_KEY)) || []; } catch (e) { return []; } }
       function saveCart(c) { localStorage.setItem(CART_KEY, JSON.stringify(c)); scheduleSync(); }
-      function addRecipeToCart(r) {
+      function addIngredientLinesToCart(lines) {
         var c = loadCart();
-        (r.ingredients || "").split("\n").map(function (s) { return s.trim(); }).filter(Boolean).forEach(function (line) {
-          c.push({ id: uid(), text: line, done: false });
-        });
+        lines.forEach(function (line) { c.push({ id: uid(), text: line, done: false }); });
         saveCart(c);
       }
+
+      // ---------- ingredient picker (choose which ingredients to add) ----------
+      var ingPickOverlay = document.getElementById("ingPickOverlay");
+      var ingPickLines = [];
+      var ingPickSelected = {};
+      function openIngredientPicker(r) {
+        ingPickLines = (r.ingredients || "").split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
+        if (ingPickLines.length === 0) return;
+        ingPickSelected = {};
+        ingPickLines.forEach(function (_, i) { ingPickSelected[i] = true; });
+        renderIngredientPicker();
+        openOverlay(ingPickOverlay);
+      }
+      function renderIngredientPicker() {
+        var host = document.getElementById("ingPickList");
+        host.innerHTML = ingPickLines.map(function (line, i) {
+          return '<div class="ing-pick-row' + (ingPickSelected[i] ? ' sel' : '') + '" data-i="' + i + '">' +
+            '<span class="ing-pick-check">' + (ingPickSelected[i] ? '✓' : '') + '</span>' +
+            '<span class="ing-pick-text">' + getIngredientEmoji(line) + ' ' + esc(line) + '</span>' +
+            '</div>';
+        }).join("");
+        Array.prototype.forEach.call(host.querySelectorAll(".ing-pick-row"), function (el) {
+          el.onclick = function () {
+            var i = +el.dataset.i;
+            ingPickSelected[i] = !ingPickSelected[i];
+            renderIngredientPicker();
+          };
+        });
+        var allSelected = ingPickLines.every(function (_, i) { return ingPickSelected[i]; });
+        document.getElementById("ingPickToggleAll").textContent = allSelected ? "ביטול כל הבחירה" : "בחירת הכול";
+      }
+      document.getElementById("ingPickToggleAll").onclick = function () {
+        var allSelected = ingPickLines.every(function (_, i) { return ingPickSelected[i]; });
+        ingPickLines.forEach(function (_, i) { ingPickSelected[i] = !allSelected; });
+        renderIngredientPicker();
+      };
+      document.getElementById("ingPickClose").onclick = function () { closeOverlay(ingPickOverlay); };
+      document.getElementById("ingPickConfirm").onclick = function () {
+        var chosen = ingPickLines.filter(function (_, i) { return ingPickSelected[i]; });
+        if (chosen.length === 0) { alert("לא נבחרו מרכיבים."); return; }
+        addIngredientLinesToCart(chosen);
+        closeOverlay(ingPickOverlay);
+        closeOverlay(detailOverlay);
+        setView("cart");
+      };
       function renderCart() {
         var host = document.getElementById("cartList");
         var c = loadCart();
@@ -2917,7 +3015,7 @@
       document.getElementById("addBtnTop").onclick = function () { openForm(null); };
       document.getElementById("formClose").onclick = function () { closeOverlay(formOverlay); };
       document.getElementById("detailClose").onclick = function () { closeOverlay(detailOverlay); };
-      [formOverlay, detailOverlay, pickerOverlay, spaceOverlay, nutritionOverlay].forEach(function (o) {
+      [formOverlay, detailOverlay, pickerOverlay, spaceOverlay, nutritionOverlay, ingPickOverlay].forEach(function (o) {
         o.addEventListener("click", function (e) { if (e.target === o) closeOverlay(o); });
       });
       searchInput.oninput = function () { query = this.value.trim().toLowerCase(); renderGrid(false); };
