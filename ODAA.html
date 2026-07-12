@@ -751,6 +751,95 @@
       color: var(--accent);
     }
 
+    /* ---------- Planner actions + nutrition ---------- */
+    .planner-actions {
+      display: flex;
+      gap: 10px;
+      margin: 4px 0 12px;
+    }
+
+    .planner-actions button {
+      flex: 1;
+      border: 0;
+      border-radius: var(--r-md);
+      padding: 13px 10px;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 13.5px;
+      cursor: pointer;
+      background: var(--surface);
+      color: var(--ink-2);
+      box-shadow: var(--shadow);
+      transition: transform .12s;
+    }
+
+    .planner-actions button:active {
+      transform: scale(.97);
+    }
+
+    .planner-actions button.primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .day-nutrition-btn {
+      width: 100%;
+      margin-top: 4px;
+      border: 1.5px dashed var(--line);
+      background: transparent;
+      color: var(--ink-2);
+      border-radius: var(--r-md);
+      padding: 9px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: inherit;
+      transition: border-color .15s, color .15s;
+    }
+
+    .day-nutrition-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .donut-wrap {
+      display: flex;
+      justify-content: center;
+      padding: 10px 0 4px;
+    }
+
+    .legend-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin: 18px 4px 8px;
+    }
+
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+    }
+
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .legend-label {
+      flex: 1;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .legend-pct {
+      font-weight: 800;
+      color: var(--ink-2);
+    }
+
     /* ---------- Allergen board ---------- */
     .all-card {
       background: var(--surface);
@@ -1701,6 +1790,10 @@
     <section class="view" id="view-planner" hidden>
       <h1 class="view-head">תכנון ארוחות</h1>
       <p class="view-sub">שבוע אחד — הוסיפי מתכונים מהספרייה לכל יום.</p>
+      <div class="planner-actions">
+        <button class="primary" id="autoFillBtn">מילוי אוטומטי לשבוע 🔀</button>
+        <button id="weekSummaryBtn">סיכום שבועי 📊</button>
+      </div>
       <button class="grocery-btn" id="weekToCart">הוספת כל מרכיבי השבוע לרשימת הקניות</button>
       <div id="planList"></div>
     </section>
@@ -1872,6 +1965,23 @@
     </div>
   </div>
 
+  <!-- Nutrition summary -->
+  <div class="overlay" id="nutritionOverlay">
+    <div class="sheet">
+      <div class="grabber"></div>
+      <div class="sheet-head">
+        <h2 id="nutritionTitle">פילוח תזונתי</h2>
+        <button class="icon-btn" id="nutritionClose" aria-label="סגירה">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round">
+            <path d="M18 6 6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div id="nutritionBody"></div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     (function () {
@@ -1995,6 +2105,92 @@
         }
         return "🔸";
       }
+
+      // ---------- food groups (nutrition summary) ----------
+      var FOOD_GROUPS = {
+        veg: { label: "ירקות", color: "#4c9a5b", keys: ["בטטה", "תפוח אדמה", "תפו\"א", "בצל", "שום", "עגבניה", "מלפפון", "גזר", "ברוקולי", "קישוא", "חציל", "תירס", "פלפל", "חסה", "תרד", "עלים", "פטריי", "פטריות"] },
+        fruit: { label: "פירות", color: "#e0813f", keys: ["תפוח", "בננה", "תות", "אוכמניות", "לימון", "תפוז", "אגס", "מנגו", "ענבים", "אפרסק"] },
+        grain: { label: "דגנים", color: "#c9a15a", keys: ["שיבולת שועל", "קוואקר", "לחם", "פיתה", "אורז", "פסטה", "איטריות", "קמח", "פירורי לחם"] },
+        protein: { label: "חלבון", color: "#b5533c", keys: ["ביצה", "עוף", "הודו", "בקר", "בשר", "דג", "סלמון", "עדשים", "חומוס", "שעועית", "טופו", "בוטנים", "אגוזים", "שקדים"] },
+        dairy: { label: "מוצרי חלב", color: "#5b7fa6", keys: ["חלב", "גבינה", "יוגורט", "חמאה"] },
+        fat: { label: "שומנים", color: "#d6b93c", keys: ["שמן זית", "שמן", "טחינה", "אבוקדו"] },
+        other: { label: "אחר", color: "#a8aaad", keys: [] }
+      };
+      var FOOD_GROUP_ORDER = ["veg", "fruit", "grain", "protein", "dairy", "fat", "other"];
+      function classifyIngredient(line) {
+        for (var i = 0; i < FOOD_GROUP_ORDER.length; i++) {
+          var g = FOOD_GROUP_ORDER[i];
+          var keys = FOOD_GROUPS[g].keys;
+          for (var k = 0; k < keys.length; k++) {
+            if (line.indexOf(keys[k]) !== -1) return g;
+          }
+        }
+        return "other";
+      }
+      function nutritionForRecipeIds(ids) {
+        var counts = {};
+        ids.forEach(function (id) {
+          var r = getRecipe(id);
+          if (!r) return;
+          (r.ingredients || "").split("\n").map(function (s) { return s.trim(); }).filter(Boolean).forEach(function (line) {
+            var g = classifyIngredient(line);
+            counts[g] = (counts[g] || 0) + 1;
+          });
+        });
+        return counts;
+      }
+      function dayRecipeIds(dayIdx) {
+        var plan = loadPlan(), ids = [], meals = plan[dayIdx] || {};
+        Object.keys(meals).forEach(function (mk) { (meals[mk] || []).forEach(function (id) { ids.push(id); }); });
+        return ids;
+      }
+      function weekRecipeIds() {
+        var plan = loadPlan(), ids = [];
+        Object.keys(plan).forEach(function (day) {
+          var meals = plan[day] || {};
+          Object.keys(meals).forEach(function (mk) { (meals[mk] || []).forEach(function (id) { ids.push(id); }); });
+        });
+        return ids;
+      }
+      function renderDonut(counts) {
+        var total = 0;
+        FOOD_GROUP_ORDER.forEach(function (g) { total += (counts[g] || 0); });
+        if (total === 0) {
+          return '<div class="empty" style="padding:40px 10px"><div class="big">📊</div><h2>אין נתונים עדיין</h2><p>שבצי מתכונים בתכנון השבוע כדי לראות פילוח.</p></div>';
+        }
+        var r = 60, C = 2 * Math.PI * r, cx = 80, cy = 80, offset = 0, segs = "";
+        FOOD_GROUP_ORDER.forEach(function (g) {
+          var n = counts[g] || 0;
+          if (!n) return;
+          var len = (n / total) * C;
+          segs += '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="' + FOOD_GROUPS[g].color + '" stroke-width="26" ' +
+            'stroke-dasharray="' + len.toFixed(2) + ' ' + (C - len).toFixed(2) + '" stroke-dashoffset="' + (-offset).toFixed(2) + '" />';
+          offset += len;
+        });
+        var legend = FOOD_GROUP_ORDER.filter(function (g) { return counts[g]; }).map(function (g) {
+          var pct = Math.round((counts[g] / total) * 100);
+          return '<div class="legend-row"><span class="legend-dot" style="background:' + FOOD_GROUPS[g].color + '"></span>' +
+            '<span class="legend-label">' + FOOD_GROUPS[g].label + '</span><span class="legend-pct">' + pct + '%</span></div>';
+        }).join("");
+        return '<div class="donut-wrap"><svg viewBox="0 0 160 160" width="190" height="190" style="transform:rotate(-90deg)">' + segs + '</svg></div>' +
+          '<div class="legend-list">' + legend + '</div>';
+      }
+      var nutritionOverlay = document.getElementById("nutritionOverlay");
+      function openNutrition(dayIdx) {
+        var title, counts;
+        if (dayIdx === undefined || dayIdx === null) {
+          title = "סיכום שבועי";
+          counts = nutritionForRecipeIds(weekRecipeIds());
+        } else {
+          title = DAYS[dayIdx] + " · פילוח תזונתי";
+          counts = nutritionForRecipeIds(dayRecipeIds(dayIdx));
+        }
+        document.getElementById("nutritionTitle").textContent = title;
+        document.getElementById("nutritionBody").innerHTML = renderDonut(counts);
+        openOverlay(nutritionOverlay);
+      }
+      document.getElementById("nutritionClose").onclick = function () { closeOverlay(nutritionOverlay); };
+      document.getElementById("weekSummaryBtn").onclick = function () { openNutrition(null); };
 
       // ---------- storage ----------
       function load() { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { return []; } }
@@ -2401,7 +2597,8 @@
               '<button class="meal-add" data-day="' + i + '" data-meal="' + m.key + '">+ הוספה</button>' +
               '</div></div>';
           }).join("");
-          col.innerHTML = '<div class="day-col-head">' + d + '</div>' + slots;
+          col.innerHTML = '<div class="day-col-head">' + d + '</div>' + slots +
+            '<button class="day-nutrition-btn" data-day="' + i + '">📊 פילוח יומי</button>';
           week.appendChild(col);
         });
         host.innerHTML = "";
@@ -2419,7 +2616,48 @@
         Array.prototype.forEach.call(host.querySelectorAll(".meal-recipe"), function (el) {
           el.onclick = function () { openDetail(el.dataset.open); };
         });
+        Array.prototype.forEach.call(host.querySelectorAll(".day-nutrition-btn"), function (b) {
+          b.onclick = function () { openNutrition(+b.dataset.day); };
+        });
       }
+      var MEAL_CAT_MAP = {
+        "ארוחת בוקר": "breakfast", "ארוחת צהריים": "lunch", "ארוחת ערב": "dinner",
+        "חטיפים": "snack", "משקאות ושייקים": "snack"
+      };
+      function autoFillPlanner() {
+        var recipes = load();
+        if (recipes.length === 0) { alert("אין מתכונים בספרייה עדיין. הוסיפי מתכונים קודם."); return; }
+        var pools = { breakfast: [], lunch: [], dinner: [], snack: [] };
+        var other = [];
+        recipes.forEach(function (r) {
+          var mk = MEAL_CAT_MAP[r.cat];
+          if (mk) pools[mk].push(r.id); else other.push(r.id);
+        });
+        var allIds = recipes.map(function (r) { return r.id; });
+        Object.keys(pools).forEach(function (mk) {
+          if (pools[mk].length === 0) pools[mk] = other.length ? other.slice() : allIds.slice();
+        });
+        var cursor = { breakfast: 0, lunch: 0, dinner: 0, snack: 0 };
+        var plan = loadPlan();
+        var filled = 0;
+        for (var day = 0; day < 7; day++) {
+          plan[day] = plan[day] || {};
+          MEALS.forEach(function (m) {
+            var existing = plan[day][m.key];
+            if (existing && existing.length) return;
+            var pool = pools[m.key];
+            if (!pool.length) return;
+            var id = pool[cursor[m.key] % pool.length];
+            cursor[m.key]++;
+            plan[day][m.key] = [id];
+            filled++;
+          });
+        }
+        savePlan(plan);
+        renderPlanner();
+        alert(filled > 0 ? ("מולאו " + filled + " ארוחות באופן אוטומטי לפי המתכונים שיש.") : "כל הארוחות כבר מתוכננות לשבוע.");
+      }
+      document.getElementById("autoFillBtn").onclick = autoFillPlanner;
       function openPicker(day, meal) {
         pickerDay = day; pickerMeal = meal;
         var ml = MEALS.filter(function (m) { return m.key === meal; })[0];
@@ -2576,7 +2814,7 @@
       document.getElementById("addBtnTop").onclick = function () { openForm(null); };
       document.getElementById("formClose").onclick = function () { closeOverlay(formOverlay); };
       document.getElementById("detailClose").onclick = function () { closeOverlay(detailOverlay); };
-      [formOverlay, detailOverlay, pickerOverlay, spaceOverlay].forEach(function (o) {
+      [formOverlay, detailOverlay, pickerOverlay, spaceOverlay, nutritionOverlay].forEach(function (o) {
         o.addEventListener("click", function (e) { if (e.target === o) closeOverlay(o); });
       });
       searchInput.oninput = function () { query = this.value.trim().toLowerCase(); renderGrid(false); };
