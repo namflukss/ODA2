@@ -1151,6 +1151,39 @@
       background: var(--accent-soft);
     }
 
+    .form-cat-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 7px;
+    }
+
+    .form-cat-chip {
+      border: 1.5px solid var(--line);
+      background: var(--surface);
+      border-radius: var(--r-full);
+      padding: 9px 15px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink-2);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: border-color .15s, background .15s, color .15s, transform .1s;
+    }
+
+    .form-cat-chip:active {
+      transform: scale(.95);
+    }
+
+    .form-cat-chip.sel {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--ink);
+    }
+
     .grocery-btn {
       width: 100%;
       border: 0;
@@ -1876,15 +1909,9 @@
         <label for="f-name">שם המתכון</label>
         <input type="text" id="f-name" placeholder="לדוגמה: מחית בטטה ותפוח" required />
 
-        <label for="f-cat">קטגוריה</label>
-        <select id="f-cat">
-          <option>ארוחת בוקר</option>
-          <option>ארוחת צהריים</option>
-          <option>ארוחת ערב</option>
-          <option>חטיפים</option>
-          <option>משקאות ושייקים</option>
-          <option>אחר</option>
-        </select>
+        <label>קטגוריות</label>
+        <div class="form-cat-chips" id="formCatChips"></div>
+        <div class="hint">אפשר לבחור יותר מקטגוריה אחת — למשל גם "ארוחת בוקר" וגם "מאפינס".</div>
 
         <label>בחירת אייקון</label>
         <div class="emoji-grid" id="emojiGrid"></div>
@@ -1987,10 +2014,11 @@
     (function () {
       "use strict";
       var KEY = "littleBites.recipes.he.v1";
-      var CATEGORIES = ["ארוחת בוקר", "ארוחת צהריים", "ארוחת ערב", "חטיפים", "משקאות ושייקים", "אחר"];
+      var CATEGORIES = ["ארוחת בוקר", "ארוחת צהריים", "ארוחת ערב", "חטיפים", "משקאות ושייקים", "מרקים", "תבשילים", "מאפינס", "פשטידות", "קציצות", "אחר"];
       var ALL = "כל המתכונים";
       var FAV = "★fav";
-      var activeCat = ALL;
+      var activeCats = [];
+      var showFav = false;
       var query = "";
 
       // ---------- cloud sync (Supabase) ----------
@@ -2068,15 +2096,21 @@
       // category pastels + emoji + short caption
       var CAT_BG = {
         "ארוחת בוקר": "#fdf0c0", "ארוחת צהריים": "#d8f0c8", "ארוחת ערב": "#e2dcff",
-        "חטיפים": "#ffd9e6", "משקאות ושייקים": "#d9e3ff", "אחר": "#e9e6f1"
+        "חטיפים": "#ffd9e6", "משקאות ושייקים": "#d9e3ff",
+        "מרקים": "#ffdfc2", "תבשילים": "#e8d5b7", "מאפינס": "#ffcfe0", "פשטידות": "#cdeee6", "קציצות": "#f0e0cf",
+        "אחר": "#e9e6f1"
       };
       var CAT_EMOJI = {
         "ארוחת בוקר": "☀️", "ארוחת צהריים": "🍲", "ארוחת ערב": "🌙",
-        "חטיפים": "🍪", "משקאות ושייקים": "🥤", "אחר": "🍽️"
+        "חטיפים": "🍪", "משקאות ושייקים": "🥤",
+        "מרקים": "🍜", "תבשילים": "🍛", "מאפינס": "🧁", "פשטידות": "🥧", "קציצות": "🍡",
+        "אחר": "🍽️"
       };
       var CAT_SHORT = {
         "ארוחת בוקר": "בוקר", "ארוחת צהריים": "צהריים", "ארוחת ערב": "ערב",
-        "חטיפים": "חטיפים", "משקאות ושייקים": "משקאות", "אחר": "אחר"
+        "חטיפים": "חטיפים", "משקאות ושייקים": "משקאות",
+        "מרקים": "מרקים", "תבשילים": "תבשילים", "מאפינס": "מאפינס", "פשטידות": "פשטידות", "קציצות": "קציצות",
+        "אחר": "אחר"
       };
       function catBg(c) { return c === FAV ? "#fdecc6" : c === ALL ? "#e9e6f1" : (CAT_BG[c] || CAT_BG["אחר"]); }
       function catEmoji(c) { return c === FAV ? "⭐" : c === ALL ? "✨" : (CAT_EMOJI[c] || "🍽️"); }
@@ -2193,7 +2227,17 @@
       document.getElementById("weekSummaryBtn").onclick = function () { openNutrition(null); };
 
       // ---------- storage ----------
-      function load() { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { return []; } }
+      function load() {
+        var list;
+        try { list = JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { list = []; }
+        var migrated = false;
+        list.forEach(function (r) {
+          if (!r.cats || !r.cats.length) { r.cats = r.cat ? [r.cat] : ["אחר"]; migrated = true; }
+          if (!r.cat) { r.cat = r.cats[0]; migrated = true; }
+        });
+        if (migrated) { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) { } }
+        return list;
+      }
       function save(list) {
         try { localStorage.setItem(KEY, JSON.stringify(list)); scheduleSync(); return true; }
         catch (e) { alert("אין מספיק מקום לשמירה במכשיר. נסי תמונות קטנות יותר, או למחוק כמה מתכונים."); return false; }
@@ -2234,33 +2278,52 @@
         return '<div class="' + cls + ' emoji">' + esc(e) + '</div>';
       }
 
-      // ---------- category circles ----------
+      // ---------- category circles (multi-select) ----------
       var chips = [];
-      function catCount(c) { return load().filter(function (r) { return c === ALL || r.cat === c; }).length; }
       function buildCats() {
         var items = [FAV, ALL].concat(CATEGORIES);
         catSelector.innerHTML = "";
         chips = items.map(function (c) {
           var el = document.createElement("div");
-          el.className = "cat-chip" + (c === activeCat ? " active" : "");
+          var active = c === FAV ? showFav : c === ALL ? (!showFav && activeCats.length === 0) : (!showFav && activeCats.indexOf(c) !== -1);
+          el.className = "cat-chip" + (active ? " active" : "");
           el.dataset.cat = c;
           var cap = c === FAV ? "מועדפים" : c === ALL ? "כל המתכונים" : (CAT_SHORT[c] || c);
           el.innerHTML =
             '<div class="cat-circle" style="background:' + catBg(c) + '">' + catEmoji(c) + '</div>' +
             '<div class="cat-cap">' + esc(cap) + '</div>';
-          el.onclick = function () { if (activeCat !== c) { activeCat = c; syncCats(); renderGrid(true); } };
+          el.onclick = function () {
+            if (c === ALL) { activeCats = []; showFav = false; }
+            else if (c === FAV) { showFav = !showFav; if (showFav) activeCats = []; }
+            else {
+              showFav = false;
+              var i = activeCats.indexOf(c);
+              if (i === -1) activeCats.push(c); else activeCats.splice(i, 1);
+            }
+            syncCats(); renderGrid(true);
+          };
           catSelector.appendChild(el);
           return el;
         });
       }
-      function syncCats() { chips.forEach(function (el) { el.classList.toggle("active", el.dataset.cat === activeCat); }); }
+      function syncCats() {
+        chips.forEach(function (el) {
+          var c = el.dataset.cat;
+          var active = c === FAV ? showFav : c === ALL ? (!showFav && activeCats.length === 0) : (!showFav && activeCats.indexOf(c) !== -1);
+          el.classList.toggle("active", active);
+        });
+      }
 
       // ---------- grid ----------
       function matches(r) {
-        if (activeCat === FAV) { if (!r.fav) return false; }
-        else if (activeCat !== ALL && r.cat !== activeCat) return false;
+        var cats = r.cats || (r.cat ? [r.cat] : []);
+        if (showFav) { if (!r.fav) return false; }
+        else if (activeCats.length > 0) {
+          var hasAny = cats.some(function (c) { return activeCats.indexOf(c) !== -1; });
+          if (!hasAny) return false;
+        }
         if (!query) return true;
-        var hay = (r.name + " " + r.cat + " " + r.ingredients + " " + (r.notes || "")).toLowerCase();
+        var hay = (r.name + " " + cats.join(" ") + " " + r.ingredients + " " + (r.notes || "")).toLowerCase();
         return hay.indexOf(query) !== -1;
       }
       function toggleFav(id) {
@@ -2286,9 +2349,11 @@
         empty.style.display = "none";
 
         listMeta.style.display = "flex";
+        var metaSuffix = showFav ? " · מועדפים" :
+          activeCats.length === 1 ? " · " + esc(activeCats[0]) :
+          activeCats.length > 1 ? " · " + activeCats.length + " קטגוריות" : "";
         listMeta.innerHTML = '<span class="count">' + list.length + '</span>' +
-          '<span class="label">' + (list.length === 1 ? "מתכון" : "מתכונים") +
-          (activeCat === FAV ? " · מועדפים" : activeCat !== ALL ? " · " + esc(activeCat) : "") + '</span>';
+          '<span class="label">' + (list.length === 1 ? "מתכון" : "מתכונים") + metaSuffix + '</span>';
 
         list.forEach(function (r, i) {
           var card = document.createElement("div");
@@ -2339,7 +2404,7 @@
         body.innerHTML =
           '<div class="detail-hero" style="background:' + catBg(r.cat) + '">' +
           '<button class="hero-fav' + (r.fav ? ' on' : '') + '" id="favBtn" aria-label="מועדף">' + STAR_SVG + '</button>' +
-          '<div class="rcat">' + esc(r.cat) + '</div>' +
+          '<div class="rcat">' + esc((r.cats && r.cats.length ? r.cats : [r.cat]).join(" · ")) + '</div>' +
           '<h2>' + esc(r.name) + '</h2>' +
           (meta ? '<div class="meta-row">' + meta + '</div>' : '') +
           art(r, "detail-art") +
@@ -2432,12 +2497,37 @@
         b.onclick = function () { currentReaction = (currentReaction === b.dataset.react) ? "" : b.dataset.react; selectReaction(); };
       });
 
+      // ---------- form category picker (multi-select) ----------
+      var currentCats = [];
+      var formCatChips = document.getElementById("formCatChips");
+      function buildFormCatChips() {
+        formCatChips.innerHTML = "";
+        CATEGORIES.forEach(function (c) {
+          var b = document.createElement("button");
+          b.type = "button"; b.className = "form-cat-chip"; b.dataset.cat = c;
+          b.innerHTML = '<span>' + catEmoji(c) + '</span>' + esc(c);
+          b.onclick = function () {
+            var i = currentCats.indexOf(c);
+            if (i === -1) currentCats.push(c); else currentCats.splice(i, 1);
+            selectFormCats();
+          };
+          formCatChips.appendChild(b);
+        });
+      }
+      function selectFormCats() {
+        Array.prototype.forEach.call(formCatChips.children, function (b) {
+          b.classList.toggle("sel", currentCats.indexOf(b.dataset.cat) !== -1);
+        });
+      }
+      buildFormCatChips();
+
       // ---------- form ----------
       function openForm(r) {
         document.getElementById("formTitle").textContent = r ? "עריכת מתכון" : "מתכון חדש";
         document.getElementById("f-id").value = r ? r.id : "";
         document.getElementById("f-name").value = r ? r.name : "";
-        document.getElementById("f-cat").value = r ? r.cat : "אחר";
+        currentCats = r ? (r.cats || [r.cat]).slice() : [];
+        selectFormCats();
         currentEmoji = r ? (r.emoji || "") : "";
         selectEmoji();
         currentReaction = r ? (r.reaction || "") : "";
@@ -2509,7 +2599,7 @@
         var p = parseRecipe(text);
         if (!p.name && !p.ingredients) return;
         if (p.name) document.getElementById("f-name").value = p.name;
-        if (p.cat) document.getElementById("f-cat").value = p.cat;
+        if (p.cat && currentCats.indexOf(p.cat) === -1) { currentCats.push(p.cat); selectFormCats(); }
         if (p.ingredients) document.getElementById("f-ingredients").value = p.ingredients;
         if (p.steps) document.getElementById("f-steps").value = p.steps;
         if (p.notes) document.getElementById("f-notes").value = p.notes;
@@ -2522,10 +2612,13 @@
         e.preventDefault();
         var id = document.getElementById("f-id").value;
         var existing = id ? getRecipe(id) : null;
+        var chosenCats = CATEGORIES.filter(function (c) { return currentCats.indexOf(c) !== -1; });
+        if (chosenCats.length === 0) chosenCats = ["אחר"];
         var rec = {
           id: id || uid(),
           name: document.getElementById("f-name").value.trim(),
-          cat: document.getElementById("f-cat").value,
+          cats: chosenCats,
+          cat: chosenCats[0],
           emoji: currentEmoji,
           ingredients: document.getElementById("f-ingredients").value.trim(),
           steps: document.getElementById("f-steps").value.trim(),
