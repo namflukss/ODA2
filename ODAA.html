@@ -2844,6 +2844,28 @@
 
       // ---------- shopping cart ----------
       var CART_KEY = "oda.cart.v1";
+      // measurement/quantity words that describe HOW MUCH rather than what the item is —
+      // stripped so the shopping list reads "קינמון" not "כפית קינמון". A leading count on an
+      // actual countable item (no such word after it, e.g. "2 תפוחים") is left as-is.
+      var QTY_WORDS = [
+        "כפיות", "כפית", "כפות", "כף", "כוסות", "כוס", "גרמים", "גרם", "קילוגרם", "ק\"ג", "קילו",
+        "מיליליטר", "מ\"ל", "ליטרים", "ליטר", "קורט", "חופנים", "חופן", "מעט", "קצת",
+        "חבילות", "חבילה", "שקיות", "שקית", "קופסאות", "קופסה", "בקבוקים", "בקבוק",
+        "פרוסות", "פרוסה", "שיני", "שן", "צרור", "גבעולי", "גבעול"
+      ];
+      function simplifyIngredientLine(line) {
+        var trimmed = (line || "").trim();
+        if (!trimmed) return trimmed;
+        var tokens = trimmed.split(/\s+/);
+        var i = 0;
+        if (/^(\d+([.,]\d+)?(-\d+([.,]\d+)?)?|\d+\/\d+|½|¼|¾)$/.test(tokens[i] || "")) i++;
+        else if (tokens[i] === "חצי" || tokens[i] === "רבע") i++;
+        if (tokens[i] && QTY_WORDS.indexOf(tokens[i]) !== -1) {
+          var rest = tokens.slice(i + 1).join(" ").trim();
+          return rest || trimmed;
+        }
+        return trimmed;
+      }
       function loadCart() { try { return JSON.parse(localStorage.getItem(CART_KEY)) || []; } catch (e) { return []; } }
       function saveCart(c) { localStorage.setItem(CART_KEY, JSON.stringify(c)); scheduleSync(); }
       function addIngredientLinesToCart(lines) {
@@ -2857,7 +2879,7 @@
       var ingPickLines = [];
       var ingPickSelected = {};
       function openIngredientPicker(r) {
-        ingPickLines = (r.ingredients || "").split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
+        ingPickLines = (r.ingredients || "").split("\n").map(function (s) { return simplifyIngredientLine(s); }).filter(Boolean);
         if (ingPickLines.length === 0) return;
         ingPickSelected = {};
         ingPickLines.forEach(function (_, i) { ingPickSelected[i] = true; });
@@ -2940,7 +2962,7 @@
           Object.keys(meals).forEach(function (mk) {
             (meals[mk] || []).forEach(function (id) {
               var r = getRecipe(id);
-              if (r) (r.ingredients || "").split("\n").map(function (s) { return s.trim(); }).filter(Boolean).forEach(function (l) { lines.push(l); });
+              if (r) (r.ingredients || "").split("\n").map(function (s) { return simplifyIngredientLine(s); }).filter(Boolean).forEach(function (l) { lines.push(l); });
             });
           });
         });
