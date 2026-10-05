@@ -1,14 +1,15 @@
 "use client";
 
+import { Clapperboard, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Still } from "@/components/ui/Still";
 import { Drawer } from "@/components/ui/Drawer";
-import { Field, Select, ConfirmButton } from "@/components/ui/forms";
+import { Badge, ConfirmButton, Field, Select } from "@/components/ui/forms";
+import { Still } from "@/components/ui/Still";
 import { useFilmRoom } from "@/lib/store";
 import type { Film, FilmFormat } from "@/lib/types";
-import { cx, formatRelative, pad } from "@/lib/utils";
+import { cx, formatRelative } from "@/lib/utils";
 import { FILM_FORMATS } from "@/lib/vocabulary";
 
 export function MyFilms() {
@@ -17,35 +18,46 @@ export function MyFilms() {
   const films = [...state.films].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 
   return (
-    <main className="mx-auto min-h-dvh max-w-[1400px] px-4 pb-24 md:px-10">
-      <header className="flex items-center justify-between border-b border-ink py-4">
-        <span className="eyebrow">Film Room</span>
-        <button onClick={() => setCreating(true)} className="link-action">
-          Begin a new film
+    <main className="mx-auto min-h-dvh max-w-[1280px] px-4 pb-24 md:px-10">
+      <header className="flex items-center justify-between py-5">
+        <span className="flex items-center gap-2 text-sm font-semibold">
+          <span className="grid h-7 w-7 place-items-center rounded-lg bg-ink text-white">
+            <Clapperboard size={15} />
+          </span>
+          Film Room
+        </span>
+        <button onClick={() => setCreating(true)} className="btn btn-primary">
+          <Plus size={15} /> New film
         </button>
       </header>
 
-      <section className="grid gap-6 pt-12 pb-14 md:grid-cols-12 md:pt-24 md:pb-24">
-        <h1 className="text-display font-extrabold tracking-[-0.04em] uppercase md:col-span-8">My films</h1>
-        <p className="serif self-end text-2xl leading-snug text-ink-2 italic md:col-span-4 md:text-3xl">
-          The films you&rsquo;re making, developing and thinking about.
-        </p>
+      <section className="pt-8 pb-8 md:pt-14 md:pb-10">
+        <h1 className="text-4xl font-semibold tracking-tight md:text-5xl">My films</h1>
+        <p className="mt-2 text-lg text-ink-2">The films you&rsquo;re making, developing and thinking about.</p>
       </section>
 
-      <ol>
+      <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {films.map((film, i) => (
-          <FilmEntry key={film.id} film={film} index={i + 1} />
+          <FilmTile key={film.id} film={film} hero={i === 0} />
         ))}
-      </ol>
+        <li>
+          <button
+            onClick={() => setCreating(true)}
+            className="grid h-full min-h-56 w-full place-items-center rounded-2xl border-2 border-dashed border-line-strong text-ink-2 transition-colors hover:border-ink hover:text-ink"
+          >
+            <span className="flex flex-col items-center gap-2">
+              <span className="grid h-10 w-10 place-items-center rounded-full bg-surface shadow-[var(--shadow-card)]">
+                <Plus size={18} />
+              </span>
+              <span className="font-medium">Begin a new film</span>
+              <span className="text-sm text-mute">Every film starts as a sentence.</span>
+            </span>
+          </button>
+        </li>
+      </ul>
 
-      {films.length === 0 && (
-        <p className="serif border-t border-ink py-16 text-3xl text-ink-2 italic">
-          No films yet. Every film starts as a sentence.
-        </p>
-      )}
-
-      <footer className="mt-24 flex flex-wrap items-baseline justify-between gap-4 border-t border-rule pt-4 text-xs text-mute">
-        <span>Everything stays on this device until Film Room is connected to a server.</span>
+      <footer className="mt-20 flex flex-wrap items-center justify-between gap-4 border-t border-line pt-4 text-xs text-mute">
+        <span>Everything is saved in this browser until Film Room is connected to a server.</span>
         <ConfirmButton onConfirm={actions.resetToSample}>Restore sample film</ConfirmButton>
       </footer>
 
@@ -54,48 +66,55 @@ export function MyFilms() {
   );
 }
 
-function FilmEntry({ film, index }: { film: Film; index: number }) {
-  const flip = index % 2 === 0;
+function FilmTile({ film, hero }: { film: Film; hero: boolean }) {
+  const { state } = useFilmRoom();
+  // A small collage from the film's visual world gives each tile its own mood.
+  const strip = state.visuals.filter((v) => v.filmId === film.id).slice(0, 3);
   return (
-    <li className="group border-t border-ink">
+    <li className={cx(hero && "sm:col-span-2")}>
       <Link
         href={`/films/${film.id}`}
-        className="grid gap-5 py-6 md:grid-cols-12 md:gap-8 md:py-10"
         aria-label={`Open ${film.title}`}
+        className="group card block overflow-hidden transition-shadow hover:shadow-[var(--shadow-lift)]"
       >
-        <div className={cx("relative overflow-hidden md:col-span-5", flip && "md:order-2 md:col-start-8")}>
-          <div className="aspect-[16/10] transition-transform duration-700 ease-out group-hover:scale-[1.02]">
-            <Still image={film.cover} alt="" />
+        <div className={cx("relative flex gap-1 p-1", hero ? "h-64 md:h-80" : "h-52")}>
+          <div className="relative flex-1 overflow-hidden rounded-xl">
+            <div className="h-full w-full transition-transform duration-700 ease-out group-hover:scale-[1.03]">
+              <Still image={film.cover} alt="" />
+            </div>
+          </div>
+          {hero && strip.length > 0 && (
+            <div className="hidden w-1/3 flex-col gap-1 md:flex">
+              {strip.map((v) => (
+                <div key={v.id} className="flex-1 overflow-hidden rounded-xl">
+                  <Still image={v.image} alt="" />
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="absolute top-3 left-3 flex gap-1.5">
+            <Badge tone="dark">{film.status}</Badge>
+            <span className="inline-flex items-center rounded-full bg-white/90 px-2 py-0.5 text-[0.7rem] font-medium">{film.currentVersion}</span>
           </div>
         </div>
-        <div className={cx("flex flex-col md:col-span-7", flip && "md:order-1")}>
-          <span className="eyebrow text-red tabular-nums">{pad(index)}</span>
-          <h2 className="text-title mt-3 font-extrabold tracking-[-0.03em] uppercase transition-colors group-hover:text-red">
-            {film.title}
-          </h2>
-          <p className="serif mt-4 max-w-xl text-lg leading-snug text-ink-2 italic md:text-xl">{film.logline}</p>
-          <dl className="mt-auto grid grid-cols-2 gap-x-6 gap-y-1 pt-6 text-sm sm:grid-cols-3">
-            <div>
-              <dt className="sr-only">Format</dt>
-              <dd>
-                {film.format} · {film.duration}
-              </dd>
-            </div>
-            <div>
-              <dt className="sr-only">Stage</dt>
-              <dd>
-                {film.status} · {film.currentVersion}
-              </dd>
-            </div>
-            <div className="col-span-2 text-mute sm:col-span-1">
-              <dt className="inline">Last worked on: </dt>
-              <dd className="inline text-ink">{formatRelative(film.updatedAt)}</dd>
-            </div>
-          </dl>
+        <div className="px-5 pt-3 pb-5">
+          <h2 className={cx("font-semibold tracking-tight group-hover:text-accent", hero ? "text-2xl" : "text-lg")}>{film.title}</h2>
+          <p className="mt-0.5 text-sm text-mute">
+            {film.format} · {film.duration} · Last worked on {lastWorked(film.updatedAt)}
+          </p>
+          {film.logline && (
+            <p className={cx("serif mt-3 leading-snug text-ink-2 italic", hero ? "line-clamp-2 text-xl" : "line-clamp-3 text-lg")}>{film.logline}</p>
+          )}
         </div>
       </Link>
     </li>
   );
+}
+
+/** "today", "3 days ago", "September 14" — month names keep their capital. */
+function lastWorked(date: string): string {
+  const rel = formatRelative(date);
+  return /^[A-Z][a-z]+ \d/.test(rel) ? rel : rel.toLowerCase();
 }
 
 function NewFilmDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -140,11 +159,11 @@ function NewFilmDrawer({ open, onClose }: { open: boolean; onClose: () => void }
 
   return (
     <Drawer open={open} onClose={onClose} title="A new film" eyebrow="Begin">
-      <form onSubmit={submit} className="space-y-7">
+      <form onSubmit={submit} className="space-y-5">
         <Field label="Working title">
-          <input data-autofocus required value={title} onChange={(e) => setTitle(e.target.value)} className="input text-2xl font-bold uppercase" />
+          <input data-autofocus required value={title} onChange={(e) => setTitle(e.target.value)} className="input text-lg font-medium" />
         </Field>
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-4">
           <Field label="Format">
             <Select label="Format" value={format} onChange={setFormat} options={FILM_FORMATS.map((f) => ({ value: f, label: f }))} />
           </Field>
@@ -153,9 +172,9 @@ function NewFilmDrawer({ open, onClose }: { open: boolean; onClose: () => void }
           </Field>
         </div>
         <Field label="The film in one sentence" hint="It will change. That's the point.">
-          <textarea value={logline} onChange={(e) => setLogline(e.target.value)} rows={4} className="input serif text-xl italic" />
+          <textarea value={logline} onChange={(e) => setLogline(e.target.value)} rows={4} className="input serif text-lg italic" />
         </Field>
-        <button type="submit" className="w-full bg-ink py-3.5 text-paper eyebrow hover:bg-red">
+        <button type="submit" className="btn btn-primary w-full justify-center py-3">
           Open the room
         </button>
       </form>

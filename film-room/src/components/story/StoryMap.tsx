@@ -5,14 +5,15 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Drawer } from "@/components/ui/Drawer";
 import { EditableText } from "@/components/ui/EditableText";
-import { ConfirmButton, FilterTabs, Select } from "@/components/ui/forms";
+import { Link2, Plus, User, X } from "lucide-react";
+import { Badge, ConfirmButton, FilterTabs, PageHeader, Select } from "@/components/ui/forms";
 import { nudge, startDrag } from "@/lib/drag";
 import { useActions, useCollection } from "@/lib/store";
 import type { Point, StoryNode, StoryNodeType, StoryView } from "@/lib/types";
 import { useIsDesktop } from "@/lib/useMediaQuery";
-import { cx, pad } from "@/lib/utils";
+import { cx } from "@/lib/utils";
 import { STORY_NODE_LABEL, STORY_NODE_TYPES, STORY_VIEWS } from "@/lib/vocabulary";
-import { NODE_WIDTH, StoryNodeCard } from "./StoryNodeCard";
+import { NODE_TONE, NODE_WIDTH, StoryNodeCard } from "./StoryNodeCard";
 
 const WALL = { w: 1760, h: 1040 };
 
@@ -137,42 +138,54 @@ export function StoryMap({ filmId }: { filmId: string }) {
   );
 
   return (
-    <div className="px-4 pb-24 md:px-10">
-      <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4 border-t border-ink pt-4">
-        <div>
-          <FilterTabs label="Story views" value={view} onChange={setView} options={STORY_VIEWS.map((v) => ({ value: v.id, label: v.label }))} />
-          <p className="serif mt-2 text-lg text-ink-2 italic">{viewDef.hint}</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <span className="eyebrow text-mute">Pin up</span>
+    <div className="space-y-4">
+      <PageHeader
+        title="Story map"
+        subtitle={viewDef.hint}
+        actions={
+          <div className="flex rounded-full border border-line bg-surface p-0.5">
+            {([
+              ["wall", "Map"],
+              ["sequence", "Sequence"],
+            ] as const).map(([l, label]) => (
+              <button
+                key={l}
+                onClick={() => setLayout(l)}
+                aria-pressed={layout === l}
+                className={cx("rounded-full px-3 py-1 text-xs font-medium", layout === l ? "bg-ink text-white" : "text-ink-2 hover:text-ink")}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        }
+      />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <FilterTabs label="Story views" value={view} onChange={setView} options={STORY_VIEWS.map((v) => ({ value: v.id, label: v.label }))} />
+        <div className="no-scrollbar -mx-4 flex items-center gap-1.5 overflow-x-auto px-4 md:mx-0 md:px-0">
+          <span className="mr-1 text-xs text-mute">Add</span>
           {STORY_NODE_TYPES.map((t) => (
-            <button key={t} onClick={() => addNode(t)} className="eyebrow text-ink hover:text-red">
-              + {STORY_NODE_LABEL[t]}
-            </button>
-          ))}
-          <span className="mx-1 h-4 w-px bg-rule" />
-          {(["wall", "sequence"] as const).map((l) => (
-            <button key={l} onClick={() => setLayout(l)} aria-pressed={layout === l} className={cx("eyebrow", layout === l ? "text-red" : "text-mute hover:text-ink")}>
-              {l}
+            <button key={t} onClick={() => addNode(t)} className="pill shrink-0 py-1 text-xs">
+              <Plus size={12} /> {STORY_NODE_LABEL[t]}
             </button>
           ))}
         </div>
       </div>
 
       {connectFrom && (
-        <div className="eyebrow sticky top-12 z-20 mt-4 flex items-center justify-between bg-ink px-4 py-2.5 text-paper">
+        <div className="sticky top-16 z-20 flex items-center justify-between gap-4 rounded-full bg-ink px-5 py-2.5 text-sm text-white md:top-4">
           <span>
-            Choose what to pin “{nodes.find((n) => n.id === connectFrom)?.title}” to — click a connected one to unpin
+            Choose what to connect “{nodes.find((n) => n.id === connectFrom)?.title}” to — choose a connected one to disconnect
           </span>
-          <button onClick={() => setConnectFrom(null)} className="text-paper/70 hover:text-paper">
+          <button onClick={() => setConnectFrom(null)} className="shrink-0 text-white/70 hover:text-white">
             Cancel (Esc)
           </button>
         </div>
       )}
 
       {layout === "wall" ? (
-        <div className="relative mt-4 flex gap-0">
-          <div ref={scroller} className="wall relative h-[72dvh] min-h-[520px] flex-1 overflow-auto border border-rule" aria-label="Story wall">
+        <div className="relative flex gap-4">
+          <div ref={scroller} className="wall relative h-[74dvh] min-h-[520px] flex-1 overflow-auto rounded-3xl border border-line" aria-label="Story map">
             <div className="relative" style={{ width: WALL.w, height: WALL.h }}>
               <svg className="pointer-events-none absolute inset-0" width={WALL.w} height={WALL.h} aria-hidden>
                 {edges.map(([a, b]) => {
@@ -185,9 +198,10 @@ export function StoryMap({ filmId }: { filmId: string }) {
                       key={`${a.id}-${b.id}`}
                       d={`M ${p.x} ${p.y} Q ${(p.x + q.x) / 2} ${(p.y + q.y) / 2 + sag} ${q.x} ${q.y}`}
                       fill="none"
-                      stroke={hot ? "var(--color-red)" : "var(--color-ink)"}
-                      strokeOpacity={hot ? 0.9 : 0.35}
-                      strokeWidth={hot ? 1.6 : 1.1}
+                      stroke={hot ? "var(--color-accent)" : "var(--color-ink-2)"}
+                      strokeOpacity={hot ? 0.9 : 0.3}
+                      strokeWidth={hot ? 2 : 1.25}
+                      strokeLinecap="round"
                     />
                   );
                 })}
@@ -239,13 +253,13 @@ export function StoryMap({ filmId }: { filmId: string }) {
               })}
             </div>
           </div>
-          {isDesktop && panel && <aside className="w-[340px] shrink-0 border-y border-r border-rule bg-paper">{panel}</aside>}
+          {isDesktop && panel && <aside className="card w-[320px] shrink-0 overflow-hidden">{panel}</aside>}
         </div>
       ) : (
         <Sequence nodes={sequence} onOpen={setSelectedId} />
       )}
 
-      <p className="mt-3 text-xs text-mute">
+      <p className="text-xs text-mute">
         Drag to move · click to open · arrow keys nudge a focused card · {visible.length} pinned in this view
         {nodes.length - visible.length > 0 && `, ${nodes.length - visible.length} hidden`}
       </p>
@@ -261,16 +275,16 @@ export function StoryMap({ filmId }: { filmId: string }) {
 
 function Sequence({ nodes, onOpen }: { nodes: StoryNode[]; onOpen: (id: string) => void }) {
   return (
-    <ol className="mt-6 border-t border-rule">
+    <ol className="space-y-2">
       {nodes.map((n, i) => (
-        <li key={n.id} className="border-b border-rule">
-          <button onClick={() => onOpen(n.id)} className="group grid w-full grid-cols-[3rem_1fr] gap-4 py-5 text-left md:grid-cols-[4rem_1fr_2fr]">
-            <span className="eyebrow pt-1.5 text-red tabular-nums">{pad(i + 1)}</span>
+        <li key={n.id}>
+          <button onClick={() => onOpen(n.id)} className="card group grid w-full grid-cols-[2.5rem_1fr] gap-x-4 gap-y-1 p-4 text-left hover:shadow-[var(--shadow-lift)] md:grid-cols-[2.5rem_16rem_1fr]">
+            <span className="grid h-8 w-8 place-items-center rounded-full bg-sunken text-sm font-medium tabular-nums">{i + 1}</span>
             <span>
-              <span className={cx("eyebrow", n.type === "turning_point" ? "text-red" : "text-mute")}>{STORY_NODE_LABEL[n.type]}</span>
-              <span className="block text-2xl font-extrabold uppercase group-hover:text-red">{n.title}</span>
+              <Badge tone={NODE_TONE[n.type]}>{STORY_NODE_LABEL[n.type]}</Badge>
+              <span className="mt-1 block text-lg font-semibold group-hover:text-accent">{n.title}</span>
             </span>
-            <span className="col-start-2 leading-relaxed text-ink-2 md:col-start-3">{n.content}</span>
+            <span className="col-start-2 text-sm leading-relaxed text-ink-2 md:col-start-3">{n.content}</span>
           </button>
         </li>
       ))}
@@ -299,25 +313,25 @@ function NodePanel({
   const linked = nodes.filter((n) => n.id !== node.id && (node.connections.includes(n.id) || n.connections.includes(node.id)));
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b border-rule px-5 py-3">
+      <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-3">
         <Select
           label="Node type"
           value={node.type}
           onChange={(type) => actions.update("storyNodes", node.id, { type })}
           options={(["film", ...STORY_NODE_TYPES] as StoryNodeType[]).map((t) => ({ value: t, label: STORY_NODE_LABEL[t] }))}
-          className="eyebrow w-auto border-0 py-0 text-red"
+          className="w-auto py-1 text-sm"
         />
-        <button onClick={onClose} className="eyebrow hidden text-mute hover:text-ink md:block">
-          Close
+        <button onClick={onClose} className="hidden rounded-full p-1.5 text-mute hover:bg-hover hover:text-ink md:block" aria-label="Close">
+          <X size={16} />
         </button>
       </div>
-      <div className="flex-1 space-y-6 overflow-y-auto px-5 py-5">
+      <div className="flex-1 space-y-5 overflow-y-auto px-5 py-4">
         <EditableText
           label="Title"
           value={node.title}
           onSave={(title) => title && actions.update("storyNodes", node.id, { title })}
           multiline
-          className="text-2xl leading-tight font-extrabold uppercase"
+          className="text-xl leading-tight font-semibold"
         />
         <EditableText
           label="Description"
@@ -325,44 +339,44 @@ function NodePanel({
           onSave={(content) => actions.update("storyNodes", node.id, { content })}
           multiline
           placeholder="What happens, what it means, what you're unsure of…"
-          className="serif text-lg leading-snug italic"
+          className="serif text-lg leading-snug"
         />
         {node.personId && (
-          <Link href={`/films/${filmId}/people?person=${node.personId}`} className="link-action inline-block">
-            Open person →
+          <Link href={`/films/${filmId}/people?person=${node.personId}`} className="btn btn-ghost">
+            <User size={14} /> Open person
           </Link>
         )}
         <div>
-          <div className="flex items-baseline justify-between">
-            <p className="eyebrow text-mute">Pinned to</p>
-            <button onClick={onConnect} className={cx("eyebrow", connecting ? "text-red" : "hover:text-red")}>
-              {connecting ? "Choose on the wall…" : "+ Connect"}
+          <div className="flex items-center justify-between">
+            <p className="label">Connected to</p>
+            <button onClick={onConnect} className={cx("pill py-1 text-xs", connecting && "border-accent text-accent")}>
+              <Link2 size={12} /> {connecting ? "Choose on the map…" : "Connect"}
             </button>
           </div>
-          <ul className="mt-2 divide-y divide-rule border-y border-rule">
-            {linked.length === 0 && <li className="py-2.5 text-sm text-mute">Not connected to anything yet.</li>}
+          <ul className="mt-2 space-y-1">
+            {linked.length === 0 && <li className="text-sm text-mute">Not connected to anything yet.</li>}
             {linked.map((n) => (
-              <li key={n.id} className="group flex items-baseline justify-between gap-3 py-2">
-                <span>
-                  <span className="eyebrow mr-2 text-[0.6rem] text-mute">{STORY_NODE_LABEL[n.type]}</span>
-                  {n.title}
+              <li key={n.id} className="group flex items-center justify-between gap-2 rounded-xl bg-canvas px-3 py-2">
+                <span className="min-w-0">
+                  <span className="block text-[0.7rem] text-mute">{STORY_NODE_LABEL[n.type]}</span>
+                  <span className="block truncate text-sm font-medium">{n.title}</span>
                 </span>
-                <button onClick={() => onToggle(n)} className="text-mute hover:text-red" aria-label={`Unpin from ${n.title}`}>
-                  ×
+                <button onClick={() => onToggle(n)} className="rounded-full p-1 text-mute hover:bg-hover hover:text-accent" aria-label={`Disconnect from ${n.title}`}>
+                  <X size={14} />
                 </button>
               </li>
             ))}
           </ul>
         </div>
       </div>
-      <div className="border-t border-rule px-5 py-3">
+      <div className="border-t border-line px-4 py-2">
         <ConfirmButton
           onConfirm={() => {
             actions.remove("storyNodes", node.id);
             onClose();
           }}
         >
-          Take it off the wall
+          Remove from map
         </ConfirmButton>
       </div>
     </div>

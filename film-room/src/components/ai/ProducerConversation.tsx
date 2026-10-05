@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowUp, Bookmark, Check, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useProducer } from "@/lib/ai/useProducer";
@@ -50,49 +51,52 @@ export function ProducerConversation({
   };
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
       {messages.length === 0 && !thinking && (
         <div>
-          <p className="serif text-3xl leading-tight italic md:text-4xl">
-            I&rsquo;ve read everything in the room. What&rsquo;s on your mind about the film?
-          </p>
-          <ul className="mt-6 divide-y divide-rule border-y border-rule">
+          <div className="flex items-start gap-3">
+            <ProducerAvatar />
+            <div className="rounded-2xl rounded-tl-md bg-surface px-4 py-3 shadow-[var(--shadow-card)]">
+              <p className="serif text-xl leading-snug">I&rsquo;ve read everything in the room. What&rsquo;s on your mind about the film?</p>
+            </div>
+          </div>
+          <div className="mt-5 flex flex-wrap gap-2 pl-12">
             {prompts.map((p) => (
-              <li key={p}>
-                <button onClick={() => submit(p)} className="group flex w-full items-baseline justify-between gap-4 py-3 text-left hover:text-red">
-                  <span>{p}</span>
-                  <span aria-hidden className="text-mute group-hover:text-red">→</span>
-                </button>
-              </li>
+              <button key={p} onClick={() => submit(p)} className="rounded-full border border-line bg-surface px-3.5 py-2 text-left text-sm text-ink-2 hover:border-ink hover:text-ink">
+                {p}
+              </button>
             ))}
-          </ul>
+          </div>
         </div>
       )}
 
-      <ol className="space-y-10" aria-live="polite">
+      <ol className="space-y-6" aria-live="polite">
         {messages.map((m) => (
           <li key={m.id} className="fade-in">
             {m.role === "user" ? <UserTurn message={m} /> : <ProducerTurn message={m} filmId={filmId} />}
           </li>
         ))}
         {thinking && (
-          <li className="eyebrow flex items-center gap-3 text-mute">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red" />
-            Reading the film…
+          <li className="flex items-center gap-3">
+            <ProducerAvatar />
+            <span className="flex items-center gap-2 rounded-2xl bg-surface px-4 py-3 text-sm text-mute shadow-[var(--shadow-card)]">
+              <Sparkles size={14} className="animate-pulse text-accent" /> Reading the film…
+            </span>
           </li>
         )}
       </ol>
+
       <form
         onSubmit={(e) => {
           e.preventDefault();
           submit();
         }}
-        className="border-t border-ink pt-3"
+        className="rounded-2xl border border-line bg-surface p-2 shadow-[var(--shadow-card)] focus-within:border-line-strong"
       >
-        <label className="eyebrow text-mute" htmlFor={`ask-${filmId}`}>
+        <label className="sr-only" htmlFor={`ask-${filmId}`}>
           Think with the film
         </label>
-        <div className="mt-1 flex items-end gap-4">
+        <div className="flex items-end gap-2">
           <textarea
             id={`ask-${filmId}`}
             data-autofocus
@@ -106,38 +110,48 @@ export function ProducerConversation({
             }}
             rows={2}
             placeholder="Something about the film that won't leave you alone…"
-            className="serif flex-1 bg-transparent py-1 text-xl italic outline-none placeholder:text-mute/70"
+            className="flex-1 bg-transparent px-2 py-1.5 outline-none placeholder:text-mute"
           />
-          <button type="submit" disabled={!draft.trim() || thinking} className="eyebrow bg-ink px-4 py-2.5 text-paper hover:bg-red disabled:opacity-30">
-            Ask
+          <button type="submit" disabled={!draft.trim() || thinking} className="grid h-9 w-9 place-items-center rounded-full bg-accent text-white hover:bg-accent-deep disabled:opacity-30" aria-label="Ask">
+            <ArrowUp size={17} />
           </button>
         </div>
-        <div className="mt-2 flex items-center justify-between text-xs text-mute">
-          <span>{providerName} · reads this film&rsquo;s story, people, notes, research, visuals, memory and versions</span>
-          <span className="flex gap-4">
-            {messages.length > 0 && (
-              <button type="button" onClick={clear} className="hover:text-red">
-                Clear
-              </button>
-            )}
-            {compact && (
-              <Link href={`/films/${filmId}/ai`} onClick={onNavigate} className="hover:text-ink">
-                Open full room →
-              </Link>
-            )}
-          </span>
-        </div>
       </form>
+      <div className="-mt-3 flex items-center justify-between px-1 text-xs text-mute">
+        <span>{providerName} · reads the story, people, notes, research, visuals, memory and versions</span>
+        <span className="flex gap-3">
+          {messages.length > 0 && (
+            <button type="button" onClick={clear} className="hover:text-accent">
+              Clear
+            </button>
+          )}
+          {compact && (
+            <Link href={`/films/${filmId}/ai`} onClick={onNavigate} className="hover:text-ink">
+              Full view →
+            </Link>
+          )}
+        </span>
+      </div>
       <div ref={end} className="scroll-mb-24" />
     </div>
   );
 }
 
+function ProducerAvatar() {
+  return (
+    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-ink text-white">
+      <Sparkles size={15} />
+    </span>
+  );
+}
+
 function UserTurn({ message }: { message: AIMessage }) {
   return (
-    <div className="ml-auto max-w-[85%] border-l-2 border-ink pl-4">
-      <p className="eyebrow text-mute">You · {formatTime(message.timestamp)}</p>
-      <p className="serif mt-1 text-2xl leading-snug italic">{message.content}</p>
+    <div className="flex justify-end">
+      <div className="max-w-[85%] rounded-2xl rounded-tr-md bg-ink px-4 py-3 text-white">
+        <p className="serif text-lg leading-snug">{message.content}</p>
+        <p className="mt-1 text-right text-[0.7rem] text-white/50">{formatTime(message.timestamp)}</p>
+      </div>
     </div>
   );
 }
@@ -161,23 +175,30 @@ function ProducerTurn({ message, filmId }: { message: AIMessage; filmId: string 
   };
 
   return (
-    <article className="max-w-2xl">
-      <p className="eyebrow mb-3 text-mute">Producer · {formatTime(message.timestamp)}</p>
-      <ProducerMarkup text={message.content} />
-      <div className="mt-5 flex flex-wrap gap-5">
-        {saved ? (
-          <span className="eyebrow text-red">Saved to film memory</span>
-        ) : (
-          <>
-            <button onClick={() => remember("open_question")} className="link-action text-mute">
-              Remember as question
-            </button>
-            <button onClick={() => remember("decision")} className="link-action text-mute">
-              Remember as decision
-            </button>
-          </>
-        )}
-      </div>
-    </article>
+    <div className="flex items-start gap-3">
+      <ProducerAvatar />
+      <article className="min-w-0 flex-1">
+        <div className="rounded-2xl rounded-tl-md bg-surface px-5 py-4 shadow-[var(--shadow-card)]">
+          <ProducerMarkup text={message.content} />
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+          <span className="text-mute">Producer · {formatTime(message.timestamp)}</span>
+          {saved ? (
+            <span className="flex items-center gap-1 font-medium text-accent">
+              <Check size={13} /> Saved to film memory
+            </span>
+          ) : (
+            <>
+              <button onClick={() => remember("open_question")} className="pill py-0.5 text-xs">
+                <Bookmark size={12} /> Remember as question
+              </button>
+              <button onClick={() => remember("decision")} className="pill py-0.5 text-xs">
+                <Bookmark size={12} /> Remember as decision
+              </button>
+            </>
+          )}
+        </div>
+      </article>
+    </div>
   );
 }

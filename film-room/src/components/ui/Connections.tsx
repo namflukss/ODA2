@@ -4,6 +4,7 @@
  * Connections between pieces of material: a row of linked chips plus a picker
  * that searches everything else in the film.
  */
+import { Link2, X } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useRef, useState, useEffect } from "react";
 import { refOptions, resolveRefs, sameRef } from "@/lib/refs";
@@ -29,20 +30,20 @@ export function Connections({ filmId, value, onChange, types, exclude, compact, 
 
   return (
     <div>
-      {!compact && <p className="eyebrow mb-2 text-mute">{label}</p>}
-      <ul className="flex flex-wrap items-center gap-x-2 gap-y-2">
+      {!compact && <p className="label mb-2">{label}</p>}
+      <ul className="flex flex-wrap items-center gap-1.5">
         {resolved.map((r) => (
-          <li key={`${r.ref.type}:${r.ref.id}`} className="group flex items-center border border-rule bg-card text-sm">
-            <Link href={r.href} className="flex items-baseline gap-1.5 py-1 pr-1 pl-2 hover:text-red">
-              <span className="eyebrow text-[0.6rem] text-mute">{r.kind}</span>
-              <span className="max-w-[16rem] truncate">{r.label}</span>
+          <li key={`${r.ref.type}:${r.ref.id}`} className="group flex items-center rounded-full border border-line bg-surface text-sm">
+            <Link href={r.href} className="flex items-baseline gap-1.5 py-1 pr-1 pl-3 hover:text-accent">
+              <span className="text-[0.7rem] text-mute">{r.kind}</span>
+              <span className="max-w-[14rem] truncate">{r.label}</span>
             </Link>
             <button
               onClick={() => onChange(value.filter((v) => !sameRef(v, r.ref)))}
-              className="px-2 py-1 text-mute hover:text-red"
+              className="mr-1 rounded-full p-1 text-mute hover:bg-hover hover:text-accent"
               aria-label={`Disconnect ${r.label}`}
             >
-              ×
+              <X size={12} />
             </button>
           </li>
         ))}
@@ -66,7 +67,7 @@ export function ConnectPicker({
   exclude,
   selected,
   onPick,
-  label = "+ Connect",
+  label = "Connect",
 }: {
   filmId: ID;
   types?: RefType[];
@@ -111,12 +112,13 @@ export function ConnectPicker({
       <button
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="eyebrow px-1 py-1.5 text-red hover:text-ink"
+        className="pill border-dashed"
       >
+        <Link2 size={13} />
         {label}
       </button>
       {open && (
-        <div className="fade-in absolute top-full left-0 z-30 mt-1 w-72 border border-ink bg-paper shadow-[4px_4px_0_0_rgba(29,27,24,0.08)]">
+        <div className="fade-in absolute top-full left-0 z-30 mt-2 w-72 overflow-hidden rounded-xl border border-line bg-surface shadow-[var(--shadow-lift)]">
           <input
             autoFocus
             value={query}
@@ -138,7 +140,7 @@ export function ConnectPicker({
             }}
             placeholder="Find a scene, person, theme…"
             aria-label="Search material to connect"
-            className="w-full border-b border-rule bg-transparent px-3 py-2.5 text-sm outline-none"
+            className="w-full border-b border-line bg-transparent px-3 py-2.5 text-sm outline-none"
           />
           <ul role="listbox" className="max-h-72 overflow-y-auto py-1">
             {options.length === 0 && <li className="px-3 py-2 text-sm text-mute">Nothing else to connect.</li>}
@@ -152,9 +154,9 @@ export function ConnectPicker({
                   e.preventDefault();
                   pick(i);
                 }}
-                className={cx("flex cursor-pointer items-baseline gap-2 px-3 py-1.5 text-sm", i === active && "bg-paper-2")}
+                className={cx("mx-1 flex cursor-pointer items-baseline gap-2 rounded-lg px-2.5 py-1.5 text-sm", i === active && "bg-hover")}
               >
-                <span className="eyebrow w-20 shrink-0 text-[0.6rem] text-mute">{o.kind}</span>
+                <span className="w-20 shrink-0 text-xs text-mute">{o.kind}</span>
                 <span className="truncate">{o.label}</span>
               </li>
             ))}

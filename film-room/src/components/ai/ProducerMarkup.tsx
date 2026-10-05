@@ -19,10 +19,10 @@ export function ProducerMarkup({ text }: { text: string }) {
     }
     if (list.length) {
       blocks.push(
-        <ol key={blocks.length} className="divide-y divide-rule border-y border-rule">
+        <ol key={blocks.length} className="space-y-1.5">
           {list.map((item) => (
-            <li key={item.n + item.text} className="flex items-baseline gap-4 py-2">
-              <span className="eyebrow text-red tabular-nums">{item.n}</span>
+            <li key={item.n + item.text} className="flex items-center gap-3 rounded-xl bg-canvas px-3 py-2">
+              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent-soft text-xs font-semibold text-accent-deep tabular-nums">{Number(item.n)}</span>
               <span className="font-medium">{item.text}</span>
             </li>
           ))}
@@ -39,14 +39,14 @@ export function ProducerMarkup({ text }: { text: string }) {
     else if (line.startsWith("## ")) {
       flush();
       blocks.push(
-        <h3 key={blocks.length} className="eyebrow pt-2 text-red">
+        <h3 key={blocks.length} className="pt-2 text-[0.7rem] font-semibold tracking-[0.08em] text-accent first:pt-0">
           {line.slice(3)}
         </h3>,
       );
     } else if (line.startsWith("> ")) {
       flush();
       blocks.push(
-        <p key={blocks.length} className="serif text-2xl leading-snug italic">
+        <p key={blocks.length} className="serif border-l-2 border-accent pl-3 text-xl leading-snug">
           {line.slice(2)}
         </p>,
       );

@@ -1,29 +1,60 @@
 "use client";
 
+import { Plus, Upload, X } from "lucide-react";
 import { useRef, useState, type ReactNode } from "react";
-import { cx, pad } from "@/lib/utils";
+import { cx } from "@/lib/utils";
 import { EditableText } from "./EditableText";
 import { STILLS, STILL_KEYS, Still } from "./Still";
 
-/** Editorial section heading: "01  THE STORY". */
-export function SectionHeading({
-  index,
-  children,
+/** A rounded surface with an optional header row. */
+export function Card({
+  title,
+  icon,
   action,
+  children,
   className,
+  bodyClassName,
 }: {
-  index?: number;
-  children: ReactNode;
+  title?: ReactNode;
+  icon?: ReactNode;
   action?: ReactNode;
+  children: ReactNode;
   className?: string;
+  bodyClassName?: string;
 }) {
   return (
-    <div className={cx("flex items-baseline justify-between gap-4 border-t border-ink pt-3", className)}>
-      <h2 className="eyebrow flex items-baseline gap-4">
-        {index !== undefined && <span className="text-red tabular-nums">{pad(index)}</span>}
-        <span>{children}</span>
-      </h2>
-      {action}
+    <section className={cx("card", className)}>
+      {(title || action) && (
+        <header className="flex items-center justify-between gap-3 px-5 pt-4">
+          <h2 className="flex items-center gap-2 text-[0.8rem] font-medium text-mute">
+            {icon && <span className="text-ink-2">{icon}</span>}
+            {title}
+          </h2>
+          {action}
+        </header>
+      )}
+      <div className={cx("px-5 pt-2 pb-5", bodyClassName)}>{children}</div>
+    </section>
+  );
+}
+
+/** Page title row used at the top of every film section. */
+export function PageHeader({
+  title,
+  subtitle,
+  actions,
+}: {
+  title: string;
+  subtitle?: string;
+  actions?: ReactNode;
+}) {
+  return (
+    <div className="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <h1 className="text-[1.75rem] leading-tight font-semibold tracking-tight md:text-[2rem]">{title}</h1>
+        {subtitle && <p className="mt-1 max-w-2xl text-ink-2">{subtitle}</p>}
+      </div>
+      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
   );
 }
@@ -31,8 +62,8 @@ export function SectionHeading({
 export function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
   return (
     <label className="block">
-      <span className="eyebrow text-mute">{label}</span>
-      <div className="mt-1">{children}</div>
+      <span className="label">{label}</span>
+      <div className="mt-1.5">{children}</div>
       {hint && <span className="mt-1 block text-xs text-mute">{hint}</span>}
     </label>
   );
@@ -53,28 +84,28 @@ export function ConfirmButton({
     <button
       onClick={() => (armed ? onConfirm() : setArmed(true))}
       onBlur={() => setArmed(false)}
-      className={cx("eyebrow", armed ? "text-red" : "text-mute hover:text-red", className)}
+      className={cx("btn", armed ? "bg-accent text-white" : "btn-quiet text-mute hover:text-accent", className)}
     >
       {armed ? "Click again to confirm" : children}
     </button>
   );
 }
 
-/** A numbered list of editable lines (questions, moments, changes…). */
+/** A list of editable lines (questions, moments, changes…). */
 export function ListEditor({
   items,
   onChange,
   placeholder,
-  numbered = true,
   label,
   itemClassName,
+  marker = "dot",
 }: {
   items: string[];
   onChange: (next: string[]) => void;
   placeholder: string;
-  numbered?: boolean;
   label: string;
   itemClassName?: string;
+  marker?: "dot" | "number" | "none";
 }) {
   const [draft, setDraft] = useState("");
   const add = () => {
@@ -83,12 +114,18 @@ export function ListEditor({
     onChange([...items, v]);
     setDraft("");
   };
+  const mark = (i: number) =>
+    marker === "number" ? (
+      <span className="mt-1 w-5 shrink-0 text-xs font-medium text-mute tabular-nums">{i + 1}</span>
+    ) : marker === "dot" ? (
+      <span className="mt-[0.6rem] h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+    ) : null;
   return (
     <div>
-      <ol className="divide-y divide-rule">
+      <ul className="space-y-0.5">
         {items.map((item, i) => (
-          <li key={`${i}-${item.slice(0, 12)}`} className="group flex items-baseline gap-4 py-2.5">
-            {numbered && <span className="eyebrow w-6 shrink-0 text-red tabular-nums">{pad(i + 1)}</span>}
+          <li key={`${i}-${item.slice(0, 12)}`} className="group flex items-start gap-3">
+            {mark(i)}
             <EditableText
               label={`${label} ${i + 1}`}
               value={item}
@@ -98,16 +135,16 @@ export function ListEditor({
             />
             <button
               onClick={() => onChange(items.filter((_, j) => j !== i))}
-              className="text-mute opacity-0 group-hover:opacity-100 hover:text-red focus:opacity-100"
+              className="mt-1 rounded-md p-1 text-mute opacity-0 group-hover:opacity-100 hover:bg-hover hover:text-accent focus:opacity-100"
               aria-label={`Remove ${label} ${i + 1}`}
             >
-              ×
+              <X size={14} />
             </button>
           </li>
         ))}
-      </ol>
-      <div className="flex items-baseline gap-4 border-t border-rule py-2.5">
-        {numbered && <span className="eyebrow w-6 shrink-0 text-mute tabular-nums">{pad(items.length + 1)}</span>}
+      </ul>
+      <div className="mt-1 flex items-center gap-3">
+        <Plus size={14} className="shrink-0 text-mute" />
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -115,7 +152,7 @@ export function ListEditor({
           onBlur={add}
           placeholder={placeholder}
           aria-label={`Add ${label}`}
-          className="field text-mute placeholder:text-mute/70 focus:text-ink"
+          className="field text-sm placeholder:text-mute"
         />
       </div>
     </div>
@@ -130,12 +167,12 @@ export function TagInput({ tags, onChange }: { tags: string[]; onChange: (t: str
     setDraft("");
   };
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
+    <div className="input flex flex-wrap items-center gap-1.5 py-1.5">
       {tags.map((t) => (
-        <span key={t} className="flex items-center gap-1 bg-paper-2 py-0.5 pr-1 pl-2 text-xs">
-          #{t}
-          <button onClick={() => onChange(tags.filter((x) => x !== t))} aria-label={`Remove tag ${t}`} className="px-1 text-mute hover:text-red">
-            ×
+        <span key={t} className="flex items-center gap-1 rounded-full bg-sunken py-0.5 pr-1 pl-2.5 text-xs">
+          {t}
+          <button onClick={() => onChange(tags.filter((x) => x !== t))} aria-label={`Remove tag ${t}`} className="rounded-full p-0.5 text-mute hover:text-accent">
+            <X size={12} />
           </button>
         </span>
       ))}
@@ -150,26 +187,29 @@ export function TagInput({ tags, onChange }: { tags: string[]; onChange: (t: str
           if (e.key === "Backspace" && !draft && tags.length) onChange(tags.slice(0, -1));
         }}
         onBlur={add}
-        placeholder="add tag"
+        placeholder="Add tag"
         aria-label="Add tag"
-        className="min-w-24 flex-1 bg-transparent py-1 text-xs outline-none"
+        className="min-w-24 flex-1 bg-transparent py-0.5 text-sm outline-none"
       />
     </div>
   );
 }
 
-/** Choose a procedural still or upload a local image (stored as a data URL in the MVP). */
+/** Choose a built-in still or upload a local image (stored as a data URL in the MVP). */
 export function ImagePicker({ value, onChange }: { value?: string; onChange: (v: string) => void }) {
   const file = useRef<HTMLInputElement>(null);
   return (
     <div>
-      <div className="grid grid-cols-6 gap-1.5">
+      <div className="grid grid-cols-6 gap-2">
         {STILL_KEYS.map((k) => (
           <button
             key={k}
             type="button"
             onClick={() => onChange(`still:${k}`)}
-            className={cx("aspect-square overflow-hidden outline-offset-2", value === `still:${k}` && "outline-2 outline-red")}
+            className={cx(
+              "aspect-square overflow-hidden rounded-lg ring-offset-2 transition",
+              value === `still:${k}` ? "ring-2 ring-accent" : "hover:opacity-90",
+            )}
             aria-label={`Use ${STILLS[k].label}`}
             aria-pressed={value === `still:${k}`}
           >
@@ -177,11 +217,11 @@ export function ImagePicker({ value, onChange }: { value?: string; onChange: (v:
           </button>
         ))}
       </div>
-      <div className="mt-3 flex items-center gap-4">
-        <button type="button" onClick={() => file.current?.click()} className="link-action">
-          Upload an image
+      <div className="mt-3 flex items-center gap-3">
+        <button type="button" onClick={() => file.current?.click()} className="btn btn-ghost">
+          <Upload size={14} /> Upload image
         </button>
-        {value && !value.startsWith("still:") && <span className="text-xs text-mute">Your image is in use.</span>}
+        {value && !value.startsWith("still:") && <span className="text-xs text-mute">Using your image</span>}
       </div>
       <input
         ref={file}
@@ -218,7 +258,7 @@ export function Select<T extends string>({
       value={value}
       aria-label={label}
       onChange={(e) => onChange(e.target.value as T)}
-      className={cx("input cursor-pointer appearance-none bg-transparent", className)}
+      className={cx("input cursor-pointer", className)}
     >
       {options.map((o) => (
         <option key={o.value} value={o.value}>
@@ -229,7 +269,7 @@ export function Select<T extends string>({
   );
 }
 
-/** Filter row of editorial tabs. */
+/** A row of filter pills. */
 export function FilterTabs<T extends string>({
   value,
   options,
@@ -242,22 +282,29 @@ export function FilterTabs<T extends string>({
   label: string;
 }) {
   return (
-    <div role="tablist" aria-label={label} className="no-scrollbar -mx-4 flex gap-5 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:px-0">
+    <div role="tablist" aria-label={label} className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:px-0">
       {options.map((o) => (
-        <button
-          key={o.value}
-          role="tab"
-          aria-selected={value === o.value}
-          onClick={() => onChange(o.value)}
-          className={cx(
-            "eyebrow shrink-0 border-b py-1.5 transition-colors",
-            value === o.value ? "border-ink text-ink" : "border-transparent text-mute hover:text-ink",
-          )}
-        >
+        <button key={o.value} role="tab" aria-selected={value === o.value} onClick={() => onChange(o.value)} className="pill shrink-0">
           {o.label}
-          {o.count !== undefined && <span className="ml-1.5 text-mute tabular-nums">{o.count}</span>}
+          {o.count !== undefined && <span className="tabular-nums opacity-60">{o.count}</span>}
         </button>
       ))}
     </div>
   );
 }
+
+/** A soft coloured badge. */
+export function Badge({ children, tone = "neutral" }: { children: ReactNode; tone?: Tone }) {
+  return <span className={cx("inline-flex items-center rounded-full px-2 py-0.5 text-[0.7rem] font-medium", TONE[tone])}>{children}</span>;
+}
+
+export type Tone = "neutral" | "accent" | "ochre" | "sage" | "sky" | "plum" | "dark";
+export const TONE: Record<Tone, string> = {
+  neutral: "bg-sunken text-ink-2",
+  accent: "bg-accent-soft text-accent-deep",
+  ochre: "bg-ochre-soft text-[#8a6413]",
+  sage: "bg-sage-soft text-[#4d6853]",
+  sky: "bg-sky-soft text-[#466583]",
+  plum: "bg-plum-soft text-[#6f4868]",
+  dark: "bg-ink text-white",
+};

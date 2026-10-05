@@ -1,17 +1,42 @@
 "use client";
 
+import {
+  BookText,
+  Camera,
+  FileText,
+  Film as FilmIcon,
+  ImagePlus,
+  type LucideIcon,
+  Mic,
+  MonitorSmartphone,
+  Newspaper,
+  Plus,
+  Search,
+  StickyNote,
+} from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Connections } from "@/components/ui/Connections";
 import { Drawer } from "@/components/ui/Drawer";
 import { EditableText } from "@/components/ui/EditableText";
-import { ConfirmButton, Field, FilterTabs, ImagePicker, Select, TagInput } from "@/components/ui/forms";
+import { Badge, ConfirmButton, Field, FilterTabs, ImagePicker, PageHeader, Select, TagInput } from "@/components/ui/forms";
 import { Still } from "@/components/ui/Still";
 import { resolveRefs } from "@/lib/refs";
 import { useActions, useCollection, useFilmRoom } from "@/lib/store";
 import type { ResearchItem, ResearchType } from "@/lib/types";
-import { cx, now, pad } from "@/lib/utils";
+import { cx, now } from "@/lib/utils";
 import { RESEARCH_TYPES, RESEARCH_TYPE_LABEL } from "@/lib/vocabulary";
+
+const TYPE_ICON: Record<ResearchType, LucideIcon> = {
+  article: Newspaper,
+  book: BookText,
+  film: FilmIcon,
+  photograph: Camera,
+  interview: Mic,
+  document: FileText,
+  screenshot: MonitorSmartphone,
+  note: StickyNote,
+};
 
 export function Research({ filmId }: { filmId: string }) {
   const items = useCollection("research", filmId);
@@ -47,23 +72,22 @@ export function Research({ filmId }: { filmId: string }) {
   };
 
   return (
-    <div className="px-4 pb-24 md:px-10">
-      <div className="grid gap-6 border-t border-ink pt-6 md:grid-cols-12">
-        <div className="md:col-span-7">
-          <h2 className="text-title font-extrabold tracking-[-0.03em] uppercase">Research</h2>
-          <p className="serif mt-3 max-w-xl text-xl leading-snug text-ink-2 italic">
-            What the film is made of before it&rsquo;s made. Connect each piece to the part of the film it feeds.
-          </p>
-        </div>
-        <div className="flex flex-col justify-end gap-4 md:col-span-5">
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search the archive…" aria-label="Search research" className="input" />
-          <button onClick={add} className="link-action self-start">
-            Add to the archive
+    <div className="space-y-5">
+      <PageHeader
+        title="Research"
+        subtitle="Articles, books, films, photographs, interviews and documents — each connected to the part of the film it feeds."
+        actions={
+          <button onClick={add} className="btn btn-primary">
+            <Plus size={15} /> Add research
           </button>
-        </div>
-      </div>
+        }
+      />
 
-      <div className="mt-8 border-b border-rule pb-2">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative w-full sm:w-72">
+          <Search size={15} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-mute" />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search the archive" aria-label="Search research" className="input rounded-full pl-9" />
+        </div>
         <FilterTabs
           label="Research types"
           value={type}
@@ -75,55 +99,69 @@ export function Research({ filmId }: { filmId: string }) {
         />
       </div>
       {tags.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs">
+        <div className="flex flex-wrap gap-1.5">
           {tags.map((t) => (
-            <button key={t} onClick={() => setTag(tag === t ? null : t)} aria-pressed={tag === t} className={cx(tag === t ? "text-red" : "text-mute hover:text-ink")}>
+            <button
+              key={t}
+              onClick={() => setTag(tag === t ? null : t)}
+              aria-pressed={tag === t}
+              className={cx("rounded-full px-2.5 py-0.5 text-xs", tag === t ? "bg-ink text-white" : "bg-sunken text-ink-2 hover:text-ink")}
+            >
               #{t}
             </button>
           ))}
         </div>
       )}
 
-      <ol className="mt-6 border-t border-ink">
-        {visible.map((item, i) => (
-          <ResearchRow key={item.id} item={item} index={i + 1} filmId={filmId} onOpen={() => setOpenId(item.id)} />
+      <ul className="columns-1 gap-4 sm:columns-2 xl:columns-3">
+        {visible.map((item) => (
+          <ResearchCard key={item.id} item={item} filmId={filmId} onOpen={() => setOpenId(item.id)} />
         ))}
-      </ol>
-      {visible.length === 0 && <p className="serif py-12 text-2xl text-mute italic">Nothing matches.</p>}
+      </ul>
+      {visible.length === 0 && <p className="py-12 text-center text-mute">Nothing matches.</p>}
 
       <ResearchDrawer filmId={filmId} item={items.find((i) => i.id === openId)} onClose={() => setOpenId(null)} />
     </div>
   );
 }
 
-function ResearchRow({ item, index, filmId, onOpen }: { item: ResearchItem; index: number; filmId: string; onOpen: () => void }) {
+function ResearchCard({ item, filmId, onOpen }: { item: ResearchItem; filmId: string; onOpen: () => void }) {
   const { state } = useFilmRoom();
   const refs = resolveRefs(state, filmId, item.connections);
+  const Icon = TYPE_ICON[item.type];
   return (
-    <li className="border-b border-rule">
-      <button onClick={onOpen} className="group grid w-full grid-cols-[2.5rem_1fr] gap-x-4 gap-y-2 py-5 text-left md:grid-cols-[3rem_7rem_1fr_16rem_5rem]">
-        <span className="eyebrow pt-1 text-red tabular-nums">{pad(index)}</span>
-        <span className="eyebrow pt-1 text-mute md:order-none">{RESEARCH_TYPE_LABEL[item.type]}</span>
-        <span className="col-start-2 md:col-start-auto">
-          <span className="block text-xl font-bold group-hover:text-red">{item.title}</span>
-          {item.source && <span className="serif block text-mute italic">{item.source}</span>}
-          <span className="mt-2 line-clamp-2 block max-w-2xl text-ink-2">{item.description}</span>
-        </span>
-        <span className="col-start-2 text-xs text-mute md:col-start-auto">
-          {refs.map((r) => (
-            <span key={`${r.ref.type}:${r.ref.id}`} className="mr-2 inline-block">
-              → {r.label}
-            </span>
-          ))}
-          {item.tags.length > 0 && <span className="mt-1 block">{item.tags.map((t) => `#${t}`).join(" ")}</span>}
-        </span>
-        {item.image ? (
-          <span className="col-start-2 block h-16 w-20 overflow-hidden md:col-start-auto">
-            <Still image={item.image} alt="" />
-          </span>
-        ) : (
-          <span className="hidden md:block" />
+    <li className="mb-4 break-inside-avoid">
+      <button onClick={onOpen} className="group card block w-full overflow-hidden text-left transition-shadow hover:shadow-[var(--shadow-lift)]">
+        {item.image && (
+          <div className="h-44 overflow-hidden">
+            <div className="h-full w-full transition-transform duration-700 group-hover:scale-[1.03]">
+              <Still image={item.image} alt="" />
+            </div>
+          </div>
         )}
+        <div className="p-4">
+          <div className="flex items-center gap-2 text-xs text-mute">
+            <span className="grid h-6 w-6 place-items-center rounded-md bg-sunken text-ink-2">
+              <Icon size={13} />
+            </span>
+            {RESEARCH_TYPE_LABEL[item.type]}
+          </div>
+          <p className="mt-2 text-[1.05rem] leading-snug font-semibold group-hover:text-accent">{item.title}</p>
+          {item.source && <p className="mt-0.5 text-sm text-mute">{item.source}</p>}
+          {item.description && <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-ink-2">{item.description}</p>}
+          {(refs.length > 0 || item.tags.length > 0) && (
+            <div className="mt-3 flex flex-wrap gap-1">
+              {refs.map((r) => (
+                <Badge key={`${r.ref.type}:${r.ref.id}`} tone="accent">
+                  {r.label}
+                </Badge>
+              ))}
+              {item.tags.map((t) => (
+                <Badge key={t}>#{t}</Badge>
+              ))}
+            </div>
+          )}
+        </div>
       </button>
     </li>
   );
@@ -152,11 +190,16 @@ function ResearchDrawer({ filmId, item, onClose }: { filmId: string; item?: Rese
         </ConfirmButton>
       }
     >
-      <div className="space-y-7">
+      <div className="space-y-5">
+        {item.image && (
+          <div className="h-56 overflow-hidden rounded-2xl">
+            <Still image={item.image} alt={item.title} />
+          </div>
+        )}
         <Field label="Title">
-          <EditableText label="Title" value={item.title} onSave={(title) => title && update({ title })} className="text-2xl font-bold" />
+          <EditableText label="Title" value={item.title} onSave={(title) => title && update({ title })} className="text-lg font-semibold" />
         </Field>
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-4">
           <Field label="Type">
             <Select label="Type" value={item.type} onChange={(type) => update({ type })} options={RESEARCH_TYPES.map((t) => ({ value: t, label: RESEARCH_TYPE_LABEL[t] }))} />
           </Field>
@@ -165,37 +208,23 @@ function ResearchDrawer({ filmId, item, onClose }: { filmId: string; item?: Rese
           </Field>
         </div>
         <Field label="Why it matters">
-          <EditableText label="Description" value={item.description} onSave={(description) => update({ description })} multiline placeholder="What it gives the film." className="serif text-xl leading-snug italic" />
+          <EditableText label="Description" value={item.description} onSave={(description) => update({ description })} multiline placeholder="What it gives the film." className="serif text-lg leading-snug" />
         </Field>
         <Field label="Tags">
           <TagInput tags={item.tags} onChange={(tags) => update({ tags })} />
         </Field>
-        <Connections
-          filmId={filmId}
-          value={item.connections}
-          onChange={(connections) => update({ connections })}
-          types={["story", "scene", "character", "theme", "question"]}
-        />
-        <div>
-          {item.image && (
-            <div className="mb-3 aspect-[16/10] overflow-hidden">
-              <Still image={item.image} alt={item.title} />
-            </div>
-          )}
-          <button onClick={() => setShowImage((s) => !s)} className="link-action">
-            {item.image ? "Change image" : "Attach an image"}
+        <Connections filmId={filmId} value={item.connections} onChange={(connections) => update({ connections })} types={["story", "scene", "character", "theme", "question"]} />
+        <div className="flex flex-wrap gap-2">
+          <button onClick={() => setShowImage((s) => !s)} className="btn btn-ghost">
+            <ImagePlus size={14} /> {item.image ? "Change image" : "Attach image"}
           </button>
           {item.image && (
-            <button onClick={() => update({ image: undefined })} className="link-action ml-5 text-mute">
+            <button onClick={() => update({ image: undefined })} className="btn btn-quiet">
               Remove image
             </button>
           )}
-          {showImage && (
-            <div className="mt-4">
-              <ImagePicker value={item.image} onChange={(image) => update({ image })} />
-            </div>
-          )}
         </div>
+        {showImage && <ImagePicker value={item.image} onChange={(image) => update({ image })} />}
       </div>
     </Drawer>
   );

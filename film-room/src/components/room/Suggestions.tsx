@@ -1,5 +1,6 @@
 "use client";
 
+import { BookOpen, Check, CircleHelp, Network, Plus, Sparkles, Tag, User } from "lucide-react";
 import { useState } from "react";
 import type { NoteSuggestions } from "@/lib/ai";
 import type { EntityRef, Note } from "@/lib/types";
@@ -8,7 +9,7 @@ import { cx } from "@/lib/utils";
 import { useNoteActions } from "./useNoteActions";
 
 /**
- * POSSIBLE CONNECTIONS — shown after a note is written.
+ * Possible connections — shown after a note is written.
  * Each suggestion can be accepted on its own; the four actions decide where the note goes.
  */
 export function Suggestions({
@@ -27,17 +28,17 @@ export function Suggestions({
 
   if (!suggestions) {
     return (
-      <div className="eyebrow flex items-center gap-3 py-6 text-mute">
-        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red" /> Looking for connections…
+      <div className="card flex items-center gap-3 p-5 text-sm text-mute">
+        <Sparkles size={16} className="animate-pulse text-accent" /> Looking for connections…
       </div>
     );
   }
 
   const isOn = (ref: EntityRef) => note.connections.some((c) => sameRef(c, ref));
-  const rows: { kind: string; label: string; ref: EntityRef }[] = [
-    ...suggestions.characters.map((c) => ({ kind: "Character", label: c.name, ref: { type: "character", id: c.id } as EntityRef })),
-    ...suggestions.themes.map((t) => ({ kind: "Theme", label: t, ref: { type: "theme", id: t } as EntityRef })),
-    ...suggestions.story.map((s) => ({ kind: "Story", label: s.title, ref: { type: "scene", id: s.id } as EntityRef })),
+  const rows: { kind: string; label: string; ref: EntityRef; icon: typeof User }[] = [
+    ...suggestions.characters.map((c) => ({ kind: "Character", label: c.name, ref: { type: "character", id: c.id } as EntityRef, icon: User })),
+    ...suggestions.themes.map((t) => ({ kind: "Theme", label: t, ref: { type: "theme", id: t } as EntityRef, icon: Tag })),
+    ...suggestions.story.map((s) => ({ kind: "Story", label: s.title, ref: { type: "scene", id: s.id } as EntityRef, icon: BookOpen })),
   ];
   const finish = (msg: string) => {
     setDone(msg);
@@ -46,45 +47,58 @@ export function Suggestions({
   const person = suggestions.characters[0];
 
   return (
-    <div className="rise-in">
-      <p className="eyebrow text-red">Possible connections</p>
-      <ul className="mt-3 divide-y divide-rule border-y border-rule">
+    <div className="card rise-in overflow-hidden">
+      <div className="flex items-center gap-2 px-5 pt-4 text-sm font-medium">
+        <Sparkles size={15} className="text-accent" /> Possible connections
+      </div>
+      <ul className="mt-2 px-3">
         {rows.map((r) => (
           <li key={`${r.ref.type}:${r.ref.id}`}>
             <button
               onClick={() => connect(note, [r.ref])}
               aria-pressed={isOn(r.ref)}
-              className="group flex w-full items-baseline gap-4 py-2.5 text-left"
+              className="group flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-hover"
             >
-              <span className="eyebrow w-24 shrink-0 text-mute">{r.kind}</span>
-              <span className={cx("flex-1 text-lg font-semibold", isOn(r.ref) ? "text-ink" : "group-hover:text-red")}>{r.label}</span>
-              <span className={cx("eyebrow", isOn(r.ref) ? "text-red" : "text-mute opacity-0 group-hover:opacity-100")}>
-                {isOn(r.ref) ? "Connected" : "Connect"}
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-sunken text-ink-2">
+                <r.icon size={15} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-xs text-mute">{r.kind}</span>
+                <span className="block truncate font-medium">{r.label}</span>
+              </span>
+              <span className={cx("grid h-7 w-7 place-items-center rounded-full border", isOn(r.ref) ? "border-ink bg-ink text-white" : "border-line text-mute group-hover:border-ink group-hover:text-ink")}>
+                {isOn(r.ref) ? <Check size={14} /> : <Plus size={14} />}
               </span>
             </button>
           </li>
         ))}
-        {suggestions.question && (
-          <li className="flex items-baseline gap-4 py-2.5">
-            <span className="eyebrow w-24 shrink-0 text-mute">Open question</span>
-            <span className="serif flex-1 text-xl leading-snug italic">{suggestions.question}</span>
-          </li>
-        )}
       </ul>
+      {suggestions.question && (
+        <div className="mx-5 mt-2 rounded-xl bg-accent-soft p-3">
+          <p className="flex items-center gap-1.5 text-xs font-medium text-accent-deep">
+            <CircleHelp size={13} /> Open question
+          </p>
+          <p className="serif mt-1 text-lg leading-snug">{suggestions.question}</p>
+        </div>
+      )}
 
       {done ? (
-        <p className="eyebrow mt-4 text-red">{done}</p>
+        <p className="flex items-center gap-2 px-5 py-4 text-sm font-medium text-accent">
+          <Check size={15} /> {done}
+        </p>
       ) : (
-        <div className="mt-4 grid grid-cols-2 gap-px bg-rule sm:grid-cols-4">
-          <ActionButton
+        <div className="mt-4 flex flex-wrap gap-2 border-t border-line px-5 py-4">
+          <button
+            className="btn btn-primary"
             onClick={() => {
               addToStory(note, suggestions.story.map((s) => s.id));
-              finish("Pinned to the story wall");
+              finish("Pinned to the story map");
             }}
           >
-            Add to story
-          </ActionButton>
-          <ActionButton
+            <Network size={14} /> Add to story
+          </button>
+          <button
+            className="btn btn-ghost"
             disabled={!person}
             onClick={() => {
               if (!person) return;
@@ -92,27 +106,22 @@ export function Suggestions({
               finish(`Added to ${person.name}`);
             }}
           >
-            Add to character
-          </ActionButton>
-          <ActionButton
+            <User size={14} /> Add to character
+          </button>
+          <button
+            className="btn btn-ghost"
             onClick={() => {
               saveAsQuestion(note, suggestions.question);
               finish("Saved as an open question");
             }}
           >
-            Save as question
-          </ActionButton>
-          <ActionButton onClick={onDone}>Leave in room</ActionButton>
+            <CircleHelp size={14} /> Save as question
+          </button>
+          <button className="btn btn-quiet" onClick={onDone}>
+            Leave in room
+          </button>
         </div>
       )}
     </div>
-  );
-}
-
-function ActionButton({ children, onClick, disabled }: { children: React.ReactNode; onClick: () => void; disabled?: boolean }) {
-  return (
-    <button onClick={onClick} disabled={disabled} className="eyebrow bg-paper px-3 py-3 text-left transition-colors hover:bg-ink hover:text-paper disabled:opacity-30">
-      {children}
-    </button>
   );
 }

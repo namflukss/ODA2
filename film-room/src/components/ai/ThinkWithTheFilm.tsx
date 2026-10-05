@@ -1,9 +1,10 @@
 "use client";
 
+import { Sparkles } from "lucide-react";
 import { useMemo } from "react";
+import { Card, PageHeader } from "@/components/ui/forms";
 import { contextInventory, getFilmContext } from "@/lib/ai";
 import { useFilmRoom } from "@/lib/store";
-import { pad } from "@/lib/utils";
 import { ProducerConversation } from "./ProducerConversation";
 
 export function ThinkWithTheFilm({ filmId }: { filmId: string }) {
@@ -13,39 +14,33 @@ export function ThinkWithTheFilm({ filmId }: { filmId: string }) {
   const inventory = contextInventory(context);
 
   return (
-    <div className="grid gap-x-12 gap-y-10 px-4 pb-24 md:grid-cols-12 md:px-10">
-      <aside className="order-2 md:order-1 md:col-span-4">
-        <div className="border-t border-ink pt-4 md:sticky md:top-20">
-          <p className="eyebrow text-red">Film development producer</p>
-          <p className="serif mt-3 text-xl leading-snug text-ink-2 italic">
-            Reads the whole film before every answer. Doesn&rsquo;t decide for you — shows you what it sees.
-          </p>
+    <div className="space-y-6">
+      <PageHeader title="Think with the film" subtitle="Your development producer. It reads the whole film before every answer — and shows you what it sees instead of deciding for you." />
 
-          <p className="eyebrow mt-10 text-mute">What it has read</p>
-          <ul className="mt-2 divide-y divide-rule border-y border-rule">
-            {inventory.map((i) => (
-              <li key={i.label} className="flex items-baseline justify-between py-2 text-sm">
-                <span>{i.label}</span>
-                <span className="font-semibold tabular-nums">{pad(i.count)}</span>
-              </li>
-            ))}
-          </ul>
-
-          {context.film.currentQuestions[0] && (
-            <>
-              <p className="eyebrow mt-10 text-mute">The film is asking</p>
-              <p className="mt-2 text-2xl leading-[1.05] font-extrabold uppercase">{context.film.currentQuestions[0]}</p>
-            </>
-          )}
-        </div>
-      </aside>
-
-      <section className="order-1 md:order-2 md:col-span-8">
-        <div className="border-t border-ink pt-4">
-          <h2 className="text-title mb-10 font-extrabold tracking-[-0.03em] uppercase">Think with the film</h2>
+      <div className="grid items-start gap-6 lg:grid-cols-12">
+        <section className="lg:col-span-8">
           <ProducerConversation filmId={filmId} />
-        </div>
-      </section>
+        </section>
+
+        <aside className="space-y-4 lg:sticky lg:top-6 lg:col-span-4">
+          {context.film.currentQuestions[0] && (
+            <section className="rounded-2xl bg-accent p-5 text-white">
+              <p className="text-xs font-medium text-white/70">The film is asking</p>
+              <p className="mt-2 text-xl leading-tight font-semibold">{context.film.currentQuestions[0]}</p>
+            </section>
+          )}
+          <Card title="What the producer has read" icon={<Sparkles size={14} />}>
+            <ul className="grid grid-cols-2 gap-2">
+              {inventory.map((i) => (
+                <li key={i.label} className="rounded-xl bg-canvas px-3 py-2.5">
+                  <span className="block text-xl font-semibold tabular-nums">{i.count}</span>
+                  <span className="block text-xs text-mute">{i.label}</span>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </aside>
+      </div>
     </div>
   );
 }
