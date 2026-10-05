@@ -1,0 +1,141 @@
+@import "tailwindcss";
+
+@theme {
+  --color-paper: #f3efe6;
+  --color-paper-2: #ebe5d8;
+  --color-paper-3: #e1d9c8;
+  --color-card: #f8f5ee;
+  --color-ink: #1d1b18;
+  --color-ink-2: #45403a;
+  --color-mute: #847b70;
+  --color-rule: #d4cbbb;
+  --color-red: #c4432c;
+  --color-red-deep: #9e321f;
+  --color-ochre: #d6a23d;
+
+  --font-sans: var(--font-grotesk), "Helvetica Neue", Arial, sans-serif;
+  --font-serif: var(--font-editorial), "Times New Roman", Georgia, serif;
+
+  --text-display: clamp(2.75rem, 7vw, 6.5rem);
+  --text-display--line-height: 0.92;
+  --text-title: clamp(2rem, 4.2vw, 3.75rem);
+  --text-title--line-height: 0.98;
+}
+
+@layer base {
+  html {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    background: var(--color-paper);
+    font-family: var(--font-sans);
+    min-height: 100dvh;
+  }
+  ::selection {
+    background: var(--color-red);
+    color: var(--color-paper);
+  }
+  :focus-visible {
+    outline: 1.5px solid var(--color-red);
+    outline-offset: 3px;
+  }
+  button {
+    cursor: pointer;
+  }
+  textarea {
+    resize: none;
+  }
+}
+
+@layer components {
+  /* Small caps label used throughout — the editorial "eyebrow". */
+  .eyebrow {
+    font-family: var(--font-sans);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .serif {
+    font-family: var(--font-serif);
+    font-weight: 400;
+  }
+  .rule {
+    border-color: var(--color-rule);
+  }
+  /* A field that reads as text until it's touched. */
+  .field {
+    width: 100%;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid transparent;
+    padding: 0.125rem 0;
+    transition: border-color 120ms ease;
+  }
+  .field:hover {
+    border-bottom-color: var(--color-rule);
+  }
+  .field:focus {
+    outline: none;
+    border-bottom-color: var(--color-ink);
+  }
+  .input {
+    width: 100%;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--color-rule);
+    padding: 0.5rem 0;
+  }
+  .input:focus {
+    outline: none;
+    border-bottom-color: var(--color-ink);
+  }
+  .link-action {
+    font-family: var(--font-sans);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    border-bottom: 1px solid currentColor;
+    padding-bottom: 1px;
+    transition: color 120ms ease;
+  }
+  .link-action:hover {
+    color: var(--color-red);
+  }
+  .wall {
+    background-color: var(--color-paper-2);
+    background-image: radial-gradient(circle at 1px 1px, rgba(29, 27, 24, 0.12) 1px, transparent 0);
+    background-size: 28px 28px;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fade-in {
+    animation: fade-in 320ms ease both;
+  }
+  .rise-in {
+    animation: rise-in 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
