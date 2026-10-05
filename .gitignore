@@ -4,3 +4,5 @@
 !sun.json
 !.gitignore
 !vercel.json
+!film-room/
+!film-room/**
